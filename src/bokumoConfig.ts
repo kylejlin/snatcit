@@ -1,4 +1,4 @@
-const SNAFED_CONFIG_JSON_KEYS = {
+const SNATCIT_CONFIG_JSON_KEYS = {
   creationDateString: "creation_date",
   divisionSets: "division_sets",
   divisionSetKeys: {
@@ -7,10 +7,10 @@ const SNAFED_CONFIG_JSON_KEYS = {
   },
 } as const;
 
-export interface SnafedConfig {
+export interface SnatcitConfig {
   readonly creationDate: Date;
-  readonly providedFields: string[];
-  readonly derivedFields: CmamekSrc[];
+  readonly providedFieldNames: string[];
+  readonly derivedFieldNames: CmamekSrc[];
   readonly entries: readonly Entry[];
 }
 
@@ -20,7 +20,7 @@ export interface CmamekSrc {
 
 export interface Entry {
   readonly name: string;
-  readonly providedFieldValues: readonly number[];
+  readonly providedFieldValues: { readonly [fieldName: string]: number };
 }
 
 // export function parseConfig(
