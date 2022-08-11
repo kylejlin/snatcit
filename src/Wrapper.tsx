@@ -1,11 +1,5 @@
 import React from "react";
 import { App } from "./App";
-import {
-  BokumoConfigBuilder,
-  buildConfig,
-  isFileNameBokumoConfig,
-  parseBokumoConfig,
-} from "./bokumoConfig";
 import { Header } from "./Header";
 import { getGithubUsernameOfHost } from "./misc";
 import {
@@ -80,8 +74,8 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
       githubUsername &&
       `https://github.com/${githubUsername}/bokumo/tree/main/docs/user_guide.md`;
 
-    const bokumoDotJsonFileInfo = state.fileInfo.filter((info) =>
-      isFileNameBokumoConfig(info.file.name)
+    const bokumoDotJsonFileInfo = state.fileInfo.filter(
+      (info) => /* TODO isFileNameBokumoConfig(info.file.name)*/ true
     );
     const requiredBgmFileName: undefined | string =
       bokumoDotJsonFileInfo.length === 1
@@ -277,11 +271,12 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
     type PartialInfo = Omit<FileInfo, "id">;
     const newPartialInfoProm: Promise<PartialInfo[]> = Promise.all(
       files.map((file): Promise<PartialInfo> => {
-        if (isFileNameBokumoConfig(file.name)) {
+        if (/* TODO isFileNameBokumoConfig(file.name)*/ true) {
           return new Promise((resolve) => {
             const fr = new FileReader();
             fr.addEventListener("load", () => {
-              const parseResult = parseBokumoConfig(fr.result as string);
+              const parseResult =
+                /* TODO parseBokumoConfig(fr.result as string) */ undefined as any;
               if (parseResult.error !== undefined) {
                 resolve({ file, configBuilder: undefined });
               } else {
@@ -338,7 +333,9 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
     }
 
     const [configBuilder, bgmFile] = launchResources;
-    buildConfig(configBuilder, bgmFile).then((config) => {
+    /* TODO buildConfig(configBuilder, bgmFile) */ (
+      undefined as unknown as Promise<any>
+    ).then((config) => {
       navigator.mediaDevices
         .getUserMedia({ video: false, audio: true })
         .then((stream) => {
@@ -392,9 +389,9 @@ function canLaunch(fileInfo: readonly FileInfo[]): boolean {
 
 function getConfigBuilderAndBgmFileFromFileInfoArray(
   fileInfo: readonly FileInfo[]
-): undefined | [BokumoConfigBuilder, File] {
-  const bokumoDotJsonFileInfo = fileInfo.filter((info) =>
-    isFileNameBokumoConfig(info.file.name)
+): undefined | [/* TODO BokumoConfigBuilder*/ any, File] {
+  const bokumoDotJsonFileInfo = fileInfo.filter(
+    (info) => /* TODO isFileNameBokumoConfig(info.file.name) */ true
   );
 
   if (bokumoDotJsonFileInfo.length !== 1) {

@@ -14,10 +14,12 @@ function renderReferenceTimeLines(renderConfig: RenderConfig): void {
     bokumoConfig.playbackStopInMs - bokumoConfig.playbackStartInMs;
 
   const lineFactors = bokumoConfig.referenceLinesInMs.map(
-    (lineInMs) =>
+    // TODO Remove any
+    (lineInMs: any) =>
       (lineInMs - bokumoConfig.playbackStartInMs) / playbackDurationInMs
   );
-  const lineXs = lineFactors.map((lineFactor) =>
+  // TODO Remove any
+  const lineXs = lineFactors.map((lineFactor: any) =>
     Math.floor(
       clampedLerp({
         start: 0,
@@ -44,9 +46,9 @@ function renderReferencePitchLines(renderConfig: RenderConfig): void {
   );
 
   const lineFactors = bokumoConfig.referenceLinesInHz.map(
-    (lineInHz) => lineInHz / maxFrequency
+    (lineInHz: any /* TODO */) => lineInHz / maxFrequency
   );
-  const lineYs = lineFactors.map((lineFactor) =>
+  const lineYs = lineFactors.map((lineFactor: any /* TODO */) =>
     Math.floor(
       clampedLerp({
         start: canvasHeight,

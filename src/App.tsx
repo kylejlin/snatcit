@@ -4,7 +4,6 @@ import {
   getSpectrogramCanvasHeight,
   renderSpectrogram,
 } from "./canvas/spectrogram";
-import { BokumoConfig } from "./bokumoConfig";
 import { renderReferenceLines } from "./canvas/referenceLines";
 import { RenderConfig } from "./canvas/renderConfig";
 import { Header } from "./Header";
@@ -14,7 +13,8 @@ const FFT_SIZE = 2048;
 export interface AppProps {
   mimeType: AudioMimeType;
   stream: MediaStream;
-  config: BokumoConfig;
+  // TODO
+  config: any;
 }
 
 export class App extends React.Component<AppProps, AppState> {

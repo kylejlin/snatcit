@@ -1,11 +1,10 @@
-import { BokumoConfig } from "../bokumoConfig";
 import { clampedLerp } from "../misc";
 import { RenderConfig } from "./renderConfig";
 
 export function getSpectrogramCanvasHeight(
   audioCtx: AudioContext,
   frequencyArray: Uint8Array,
-  bokumoConfig: BokumoConfig
+  bokumoConfig: /* TODO BokumoConfig */ any
 ): number {
   const numberOfSamples = frequencyArray.length;
   const hertzPerBin = audioCtx.sampleRate / numberOfSamples;

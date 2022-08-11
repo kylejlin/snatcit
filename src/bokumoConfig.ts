@@ -1,163 +1,89 @@
-const BOKUMO_CONFIG = {
-  jsonKeys: {
-    bgmFileName: "bgm_file_name",
-    playbackStartInMs: "playback_start_in_ms",
-    recordingStartInMs: "recording_start_in_ms",
-    recordingStopInMs: "recording_stop_in_ms",
-    playbackStopInMs: "playback_stop_in_ms",
-    referenceLinesInMs: "reference_lines_in_ms",
-    referenceLinesInHz: "reference_lines_in_hz",
-    recordingNames: "recording_names",
-    spectrogramMaxFrequency: "spectrogram_max_frequency_in_hz",
-  },
-  sentinels: {
-    recordingStartInMs: "recording_start_in_ms",
-    recordingStopInMs: "recording_stop_in_ms",
+const SNAFED_CONFIG_JSON_KEYS = {
+  creationDateString: "creation_date",
+  divisionSets: "division_sets",
+  divisionSetKeys: {
+    name: "name",
+    divisions: "divisions",
   },
 } as const;
 
-type TimeSentinel =
-  typeof BOKUMO_CONFIG["sentinels"][keyof typeof BOKUMO_CONFIG["sentinels"]];
-
-export interface BokumoConfig {
-  readonly bgmElement: HTMLAudioElement;
-  readonly playbackStartInMs: number;
-  readonly recordingStartInMs: number;
-  readonly recordingStopInMs: number;
-  readonly playbackStopInMs: number;
-  readonly referenceLinesInMs: number[];
-  readonly referenceLinesInHz: number[];
-  readonly recordingNames: readonly string[];
-  readonly spectrogramMaxFrequency: number;
+export interface SnafedConfig {
+  readonly creationDate: Date;
+  readonly providedFields: string[];
+  readonly derivedFields: CmamekSrc[];
+  readonly entries: readonly Entry[];
 }
 
-export interface BokumoConfigBuilder {
-  readonly bgmFileName: string;
-  readonly playbackStartInMs: number;
-  readonly recordingStartInMs: number;
-  readonly recordingStopInMs: number;
-  readonly playbackStopInMs: number;
-  readonly referenceLinesInMs: number[];
-  readonly referenceLinesInHz: number[];
-  readonly recordingNames: readonly string[];
-  readonly spectrogramMaxFrequency: undefined | number;
+export interface CmamekSrc {
+  readonly cmamekSrc: string;
 }
 
-export function isFileNameBokumoConfig(fileName: string): boolean {
-  return fileName.toLowerCase() === "bokumo.json";
+export interface Entry {
+  readonly name: string;
+  readonly providedFieldValues: readonly number[];
 }
 
-export function parseBokumoConfig(
-  configSource: string
-):
-  | { error: undefined; configBuilder: BokumoConfigBuilder }
-  | { error: "invalid_json_syntax" }
-  | { error: "invalid_json_shape" } {
-  let parsed;
-  try {
-    parsed = JSON.parse(configSource);
-    if (!(typeof parsed === "object" && parsed !== null)) {
-      return { error: "invalid_json_shape" };
-    }
-  } catch {
-    return { error: "invalid_json_syntax" };
-  }
+// export function parseConfig(
+//   src: string
+// ):
+//   | { error: "invalid_json_syntax" }
+//   | { error: "invalid_json_shape" }
+//   | { error: undefined; config: SnafedConfig } {
+//   let json: Record<string, any>;
+//   try {
+//     json = JSON.parse(src);
+//   } catch {
+//     return { error: "invalid_json_syntax" };
+//   }
 
-  const bgmFileName = parsed[BOKUMO_CONFIG.jsonKeys.bgmFileName];
-  const playbackStartInMs = parsed[BOKUMO_CONFIG.jsonKeys.playbackStartInMs];
-  const recordingStartInMs = parsed[BOKUMO_CONFIG.jsonKeys.recordingStartInMs];
-  const recordingStopInMs = parsed[BOKUMO_CONFIG.jsonKeys.recordingStopInMs];
-  const playbackStopInMs = parsed[BOKUMO_CONFIG.jsonKeys.playbackStopInMs];
-  const referenceLinesInMs: (TimeSentinel | number)[] =
-    parsed[BOKUMO_CONFIG.jsonKeys.referenceLinesInMs];
-  const referenceLinesInHz = parsed[BOKUMO_CONFIG.jsonKeys.referenceLinesInHz];
-  const recordingNames = parsed[BOKUMO_CONFIG.jsonKeys.recordingNames];
-  const spectrogramMaxFrequency =
-    parsed[BOKUMO_CONFIG.jsonKeys.spectrogramMaxFrequency];
+//   try {
+//     const divisionSets = json[SNAFED_CONFIG_JSON_KEYS.divisionSets];
+//     const creationDateString = json[SNAFED_CONFIG_JSON_KEYS.creationDateString];
+//     const creationDate = new Date(creationDateString);
+//     if (
+//       Array.isArray(divisionSets) &&
+//       divisionSets.every(isDivisionSet) &&
+//       !isNaN(creationDate.getTime())
+//     ) {
+//       return { error: undefined, config: { divisionSets, creationDate } };
+//     }
+//     return { error: "invalid_json_shape" };
+//   } catch {
+//     return { error: "invalid_json_shape" };
+//   }
+// }
 
-  try {
-    if (
-      !(
-        typeof bgmFileName === "string" &&
-        Number.isInteger(playbackStartInMs) &&
-        playbackStartInMs >= 0 &&
-        Number.isInteger(recordingStartInMs) &&
-        recordingStartInMs >= playbackStartInMs &&
-        Number.isInteger(recordingStopInMs) &&
-        recordingStopInMs >= recordingStartInMs &&
-        Number.isInteger(playbackStopInMs) &&
-        playbackStopInMs >= playbackStartInMs &&
-        Array.isArray(referenceLinesInMs) &&
-        referenceLinesInMs.every((n) => {
-          const isValidNumber =
-            Number.isInteger(n) &&
-            playbackStartInMs <= n &&
-            n <= playbackStopInMs;
-          const isValidSentinel =
-            n === BOKUMO_CONFIG.sentinels.recordingStartInMs ||
-            n === BOKUMO_CONFIG.sentinels.recordingStopInMs;
-          return isValidNumber || isValidSentinel;
-        }) &&
-        Array.isArray(referenceLinesInHz) &&
-        referenceLinesInHz.every((n) => Number.isFinite(n) && n > 0) &&
-        Array.isArray(recordingNames) &&
-        recordingNames.every((name) => typeof name === "string") &&
-        recordingNames.length >= 1 &&
-        (spectrogramMaxFrequency === undefined ||
-          (Number.isInteger(spectrogramMaxFrequency) &&
-            spectrogramMaxFrequency > 0))
-      )
-    ) {
-      return { error: "invalid_json_shape" };
-    }
-  } catch {
-    return { error: "invalid_json_shape" };
-  }
+// function isDivisionSet(x: unknown): x is DivisionSet {
+//   try {
+//     const unsafeX = x as any;
+//     const name = unsafeX[SNAFED_CONFIG_JSON_KEYS.divisionSetKeys.name];
+//     const divisions =
+//       unsafeX[SNAFED_CONFIG_JSON_KEYS.divisionSetKeys.divisions];
+//     return (
+//       typeof name === "string" &&
+//       typeof divisions === "object" &&
+//       divisions !== null &&
+//       Object.values(divisions).every((n) => Number.isFinite(n))
+//     );
+//   } catch {
+//     return false;
+//   }
+// }
 
-  return {
-    error: undefined,
-    configBuilder: {
-      bgmFileName,
-      playbackStartInMs,
-      recordingStartInMs,
-      recordingStopInMs,
-      playbackStopInMs,
-      referenceLinesInMs: referenceLinesInMs.map((n) => {
-        switch (n) {
-          case BOKUMO_CONFIG.sentinels.recordingStartInMs:
-            return recordingStartInMs;
-          case BOKUMO_CONFIG.sentinels.recordingStopInMs:
-            return recordingStopInMs;
-          default:
-            return n;
-        }
-      }),
-      referenceLinesInHz,
-      recordingNames,
-      spectrogramMaxFrequency,
-    },
-  };
-}
-
-export function buildConfig(
-  builder: BokumoConfigBuilder,
-  bgmFile: File
-): Promise<BokumoConfig> {
-  return new Promise((resolve) => {
-    const bgmElement = document.createElement("audio");
-    bgmElement.addEventListener("loadeddata", () => {
-      resolve({
-        bgmElement,
-        playbackStartInMs: builder.playbackStartInMs,
-        recordingStartInMs: builder.recordingStartInMs,
-        recordingStopInMs: builder.recordingStopInMs,
-        playbackStopInMs: builder.playbackStopInMs,
-        referenceLinesInMs: builder.referenceLinesInMs,
-        referenceLinesInHz: builder.referenceLinesInHz,
-        recordingNames: builder.recordingNames,
-        spectrogramMaxFrequency: builder.spectrogramMaxFrequency ?? Infinity,
-      });
-    });
-    bgmElement.src = URL.createObjectURL(bgmFile);
-  });
-}
+// export function stringifyConfig(config: SnafedConfig): string {
+//   return JSON.stringify(
+//     {
+//       [SNAFED_CONFIG_JSON_KEYS.creationDateString]:
+//         config.creationDate.toISOString(),
+//       [SNAFED_CONFIG_JSON_KEYS.divisionSets]: config.divisionSets.map(
+//         (divisionSet) => ({
+//           [SNAFED_CONFIG_JSON_KEYS.divisionSetKeys.name]: divisionSet.name,
+//           [SNAFED_CONFIG_JSON_KEYS.divisionSetKeys.divisions]:
+//             divisionSet.divisions,
+//         })
+//       ),
+//     },
+//     null,
+//     4
+//   );
+// }
