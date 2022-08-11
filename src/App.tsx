@@ -1,6 +1,8 @@
 import React from "react";
 import { AppProps, AppState } from "./state";
 import { Header } from "./Header";
+import { getAllFieldValuesForEntry } from "./config";
+import { renderSpectrogramAndMarkings } from "./canvas/renderSpectrogramAndMarkings";
 
 export class App extends React.Component<AppProps, AppState> {
   private spectrogramRef: React.RefObject<HTMLCanvasElement>;
@@ -15,12 +17,14 @@ export class App extends React.Component<AppProps, AppState> {
     this.nextFileButtonOnClick = this.nextFileButtonOnClick.bind(this);
     this.downloadButtonOnClick = this.downloadButtonOnClick.bind(this);
     this.volumeSliderOnChange = this.volumeSliderOnChange.bind(this);
-    this.renderSpectrogram = this.renderSpectrogram.bind(this);
+    this.renderSpectrogramAndMarkingsUsingSelectedAudioFile =
+      this.renderSpectrogramAndMarkingsUsingSelectedAudioFile.bind(this);
 
     this.state = {
       volume: 1,
       isPlaying: false,
       selectedIndex: 0,
+      config: this.props.initialConfig,
     };
 
     this.spectrogramRef = React.createRef();
@@ -31,7 +35,7 @@ export class App extends React.Component<AppProps, AppState> {
 
   componentDidMount(): void {
     this.resizeCanvas();
-    this.renderSpectrogram();
+    this.renderSpectrogramAndMarkingsUsingSelectedAudioFile();
   }
 
   componentDidUpdate(): void {
@@ -41,6 +45,11 @@ export class App extends React.Component<AppProps, AppState> {
   render(): React.ReactElement {
     const fileNames = this.props.audioFiles.map((f) => f.name);
     const { selectedIndex, isPlaying } = this.state;
+    const { namesOfDerivedFieldsThatCouldNotBeComputed } =
+      getAllFieldValuesForEntry(
+        this.state.config,
+        this.props.audioFiles[this.state.selectedIndex].name
+      );
     return (
       <div className="App">
         <Header />
@@ -92,6 +101,17 @@ export class App extends React.Component<AppProps, AppState> {
           width={window.innerWidth}
           height={/* TODO */ 100}
         />
+
+        {namesOfDerivedFieldsThatCouldNotBeComputed.length > 0 && (
+          <>
+            <p>Fields that could not be computed:</p>
+            <ol>
+              {namesOfDerivedFieldsThatCouldNotBeComputed.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ol>
+          </>
+        )}
       </div>
     );
   }
@@ -102,7 +122,7 @@ export class App extends React.Component<AppProps, AppState> {
       {
         selectedIndex: previousIndex,
       },
-      this.renderSpectrogram
+      this.renderSpectrogramAndMarkingsUsingSelectedAudioFile
     );
   }
 
@@ -115,7 +135,7 @@ export class App extends React.Component<AppProps, AppState> {
       {
         selectedIndex: nextIndex,
       },
-      this.renderSpectrogram
+      this.renderSpectrogramAndMarkingsUsingSelectedAudioFile
     );
   }
 
@@ -131,7 +151,7 @@ export class App extends React.Component<AppProps, AppState> {
 
     const clampedVolume = Math.max(0, Math.min(unclamped, 1));
     // TODO
-    // this.props.config.bgmElement.volume = clampedVolume;
+    // audioElement.volume = clampedVolume;
     this.setState({ volume: clampedVolume });
   }
 
@@ -165,9 +185,19 @@ export class App extends React.Component<AppProps, AppState> {
     canvas.style.position = "absolute";
   }
 
-  renderSpectrogram(): void {
+  renderSpectrogramAndMarkingsUsingSelectedAudioFile(): void {
+    const canvas = this.spectrogramRef.current;
+    if (canvas === null) {
+      return;
+    }
+    const ctx = canvas.getContext("2d")!;
+
+    const { computedValues } = getAllFieldValuesForEntry(
+      this.state.config,
+      this.props.audioFiles[this.state.selectedIndex].name
+    );
     this.getAudioBuffer(this.state.selectedIndex).then((audioBuffer) => {
-      // TODO
+      renderSpectrogramAndMarkings(ctx, audioBuffer, computedValues);
     });
   }
 }

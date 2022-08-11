@@ -168,7 +168,10 @@ export type EvalResult =
   | { succeeded: true; value: number }
   | { succeeded: false; error: CmamekErrorKind };
 
-export function evalCmamek(src: string, context: EvalContext): EvalResult {
+export function evalCmamekExpression(
+  src: string,
+  context: EvalContext
+): EvalResult {
   const tokens = tokenize(src);
   if (tokens === undefined) {
     return { succeeded: false, error: CmamekErrorKind.InvalidSyntax };

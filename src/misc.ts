@@ -37,3 +37,17 @@ export function filterMap<T, U>(
   }
   return result;
 }
+
+export function hasDuplicates<T>(
+  arr: readonly T[],
+  isEqual: (a: T, b: T) => boolean
+): boolean {
+  for (let i = 0; i < arr.length; ++i) {
+    for (let j = i + 1; j < arr.length; ++j) {
+      if (isEqual(arr[i], arr[j])) {
+        return true;
+      }
+    }
+  }
+  return false;
+}

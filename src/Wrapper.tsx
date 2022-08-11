@@ -270,7 +270,7 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
 
     this.setState({
       kind: WrapperStateKind.LaunchSucceeded,
-      appProps: { config, audioFiles },
+      appProps: { initialConfig: config, audioFiles },
     });
   }
 

@@ -67,7 +67,7 @@ export interface LaunchSucceededState {
 export interface AppProps {
   mimeType: BrowserAudioMimeType;
   audioFiles: readonly File[];
-  config: SnatcitConfig;
+  initialConfig: SnatcitConfig;
 }
 
 export interface AppState {
@@ -86,4 +86,5 @@ export interface AppState {
   readonly volume: number;
   readonly isPlaying: boolean;
   readonly selectedIndex: number;
+  readonly config: SnatcitConfig;
 }

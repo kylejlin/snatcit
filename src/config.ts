@@ -1,7 +1,11 @@
+import { evalCmamekExpression } from "./lib/cmamek";
+import { hasDuplicates } from "./misc";
+
 const SNATCIT_CONFIG_JSON_KEYS = {
   creationDateString: "creation_date",
   providedFieldNames: "provided_field_names",
   derivedFields: "derived_fields",
+  defaultValues: "default_values",
   entries: "entries",
 
   derivedField: {
@@ -18,6 +22,7 @@ export interface SnatcitConfig {
   readonly creationDate: Date;
   readonly providedFieldNames: string[];
   readonly derivedFields: DerivedField[];
+  readonly defaultValues: { [fieldName: string]: undefined | number };
   readonly entries: readonly Entry[];
 }
 
@@ -28,7 +33,14 @@ export interface DerivedField {
 
 export interface Entry {
   readonly name: string;
-  readonly providedFieldValues: { readonly [fieldName: string]: number };
+  readonly providedFieldValues: {
+    readonly [fieldName: string]: undefined | number;
+  };
+}
+
+export interface LabeledFieldValue {
+  readonly fieldName: string;
+  readonly value: number;
 }
 
 export function parseConfig(
@@ -57,6 +69,7 @@ export function parseConfig(
           rawDerivedField[SNATCIT_CONFIG_JSON_KEYS.derivedField.cmamekSrc],
       })
     );
+    const defaultValues = json[SNATCIT_CONFIG_JSON_KEYS.defaultValues];
     const entries = json[SNATCIT_CONFIG_JSON_KEYS.entries].map(
       (rawEntry: any) => ({
         name: rawEntry[SNATCIT_CONFIG_JSON_KEYS.entry.name],
@@ -74,16 +87,32 @@ export function parseConfig(
           typeof derivedField.name === "string" &&
           typeof derivedField.cmamekSrc === "string"
       ) &&
+      !hasDuplicates<string>(
+        providedFieldNames.concat(
+          derivedFields.map((f: { name: string }) => f.name)
+        ),
+        (a, b) => a === b
+      ) &&
+      providedFieldNames.every(
+        (fieldName) => typeof defaultValues[fieldName] === "number"
+      ) &&
       entries.every(
         (entry: any) =>
           typeof entry.name === "string" &&
           typeof entry.providedFieldValues === "object" &&
           entry.providedFieldValues !== null
-      )
+      ) &&
+      !hasDuplicates<{ name: string }>(entries, (a, b) => a.name === b.name)
     ) {
       return {
         error: undefined,
-        config: { creationDate, providedFieldNames, derivedFields, entries },
+        config: {
+          creationDate,
+          providedFieldNames,
+          derivedFields,
+          defaultValues,
+          entries,
+        },
       };
     }
     return { error: "invalid_json_shape" };
@@ -114,4 +143,47 @@ export function stringifyConfig(config: SnatcitConfig): string {
     null,
     4
   );
+}
+
+export function getAllFieldValuesForEntry(
+  config: SnatcitConfig,
+  fileName: string
+): {
+  computedValues: LabeledFieldValue[];
+  namesOfDerivedFieldsThatCouldNotBeComputed: string[];
+} {
+  const providedFieldValues: { [fieldName: string]: undefined | number } =
+    config.entries.find((entry) => entry.name === fileName)
+      ?.providedFieldValues ?? {};
+  const computedValues: LabeledFieldValue[] = [];
+  const namesOfDerivedFieldsThatCouldNotBeComputed: string[] = [];
+
+  for (let i = 0; i < config.providedFieldNames.length; ++i) {
+    const fieldName = config.providedFieldNames[i];
+    const value =
+      providedFieldValues[fieldName] ?? config.defaultValues[fieldName];
+    if (value === undefined) {
+      throw new Error(
+        "Bad config file: No default given for field " + fieldName
+      );
+    }
+
+    computedValues.push({ fieldName, value });
+  }
+
+  for (let i = 0; i < config.derivedFields.length; ++i) {
+    const { name, cmamekSrc } = config.derivedFields[i];
+    const context = Object.fromEntries(
+      computedValues.map((v) => [v.fieldName, v.value])
+    );
+    const evalRes = evalCmamekExpression(cmamekSrc, context);
+
+    if (evalRes.succeeded) {
+      computedValues.push({ fieldName: name, value: evalRes.value });
+    } else {
+      namesOfDerivedFieldsThatCouldNotBeComputed.push(name);
+    }
+  }
+
+  return { computedValues, namesOfDerivedFieldsThatCouldNotBeComputed };
 }
