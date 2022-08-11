@@ -1,84 +1,31 @@
 import React from "react";
-import { AppState, AudioMimeType } from "./state";
-import {
-  getSpectrogramCanvasHeight,
-  renderSpectrogram,
-} from "./canvas/spectrogram";
-import { renderReferenceLines } from "./canvas/referenceLines";
-import { RenderConfig } from "./canvas/renderConfig";
+import { AppProps, AppState } from "./state";
 import { Header } from "./Header";
-
-const FFT_SIZE = 2048;
-
-export interface AppProps {
-  mimeType: AudioMimeType;
-  stream: MediaStream;
-  // TODO
-  config: any;
-}
 
 export class App extends React.Component<AppProps, AppState> {
   private spectrogramRef: React.RefObject<HTMLCanvasElement>;
 
   private audioCtx: AudioContext;
-  private analyser: AnalyserNode;
-  private frequencyArray: Uint8Array;
-  private recordingStartTimeInMs: number;
-  private playbackStartTimeInMs: number;
-  private previousRenderTimeInMs: number;
-  private recorder: MediaRecorder;
-  private audioChunks: Blob[];
 
   constructor(props: AppProps) {
     super(props);
 
     this.updateSpectrogram = this.updateSpectrogram.bind(this);
-    this.recordButtonOnClick = this.recordButtonOnClick.bind(this);
-    this.previousRecordingButtonOnClick =
-      this.previousRecordingButtonOnClick.bind(this);
-    this.nextRecordingButtonOnClick =
-      this.nextRecordingButtonOnClick.bind(this);
+    this.previousFileButtonOnClick = this.previousFileButtonOnClick.bind(this);
+    this.nextFileButtonOnClick = this.nextFileButtonOnClick.bind(this);
+    this.downloadButtonOnClick = this.downloadButtonOnClick.bind(this);
     this.volumeSliderOnChange = this.volumeSliderOnChange.bind(this);
-    this.startRecording = this.startRecording.bind(this);
-    this.recorderOnStart = this.recorderOnStart.bind(this);
-    this.stopRecording = this.stopRecording.bind(this);
-    this.recorderOnStop = this.recorderOnStop.bind(this);
 
     this.state = {
-      volume: this.props.config.bgmElement.volume,
-      isRecording: false,
-      recordingIndex: 0,
+      volume: 1,
+      isPlaying: false,
+      selectedIndex: 0,
     };
 
     this.spectrogramRef = React.createRef();
 
     const audioCtx = new AudioContext();
     this.audioCtx = audioCtx;
-
-    const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = FFT_SIZE;
-    this.analyser = analyser;
-    const sourceNode = audioCtx.createMediaStreamSource(this.props.stream);
-    sourceNode.connect(analyser);
-
-    const frequencyArray = new Uint8Array(analyser.frequencyBinCount);
-    this.frequencyArray = frequencyArray;
-
-    this.recordingStartTimeInMs = -1;
-    this.playbackStartTimeInMs = -1;
-    this.previousRenderTimeInMs = -1;
-
-    const recorder = new MediaRecorder(this.props.stream, {
-      mimeType: this.props.mimeType,
-    });
-    this.recorder = recorder;
-    recorder.addEventListener("dataavailable", (event) => {
-      this.audioChunks.push(event.data);
-    });
-    recorder.addEventListener("start", this.recorderOnStart);
-    recorder.addEventListener("stop", this.recorderOnStop);
-
-    this.audioChunks = [];
   }
 
   componentDidMount(): void {
@@ -91,17 +38,16 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   render(): React.ReactElement {
-    const { recordingNames } = this.props.config;
-    const { recordingIndex } = this.state;
-    const isPaused = !this.state.isRecording;
+    const fileNames = this.props.audioFiles.map((f) => f.name);
+    const { selectedIndex, isPlaying } = this.state;
     return (
       <div className="App">
         <Header />
 
         <p>
-          Current recording:{" "}
-          <span className="FileName">{recordingNames[recordingIndex]}.wav</span>{" "}
-          ({recordingIndex + 1}/{recordingNames.length})
+          Current file:{" "}
+          <span className="FileName">{fileNames[selectedIndex]}</span> (
+          {selectedIndex + 1}/{fileNames.length})
         </p>
 
         <div className="BgmVolumeInputContainer">
@@ -118,22 +64,22 @@ export class App extends React.Component<AppProps, AppState> {
 
         <button
           className="App__Button--previous Button--secondary"
-          disabled={!(0 < recordingIndex && isPaused)}
-          onClick={this.previousRecordingButtonOnClick}
+          disabled={!(0 < selectedIndex && !isPlaying)}
+          onClick={this.previousFileButtonOnClick}
         >
           Previous
         </button>
         <button
           className="App__Button--record Button--primary"
-          disabled={!isPaused}
-          onClick={this.recordButtonOnClick}
+          disabled={isPlaying}
+          onClick={this.downloadButtonOnClick}
         >
-          Record
+          Download
         </button>
         <button
           className="App__Button--next Button--secondary"
-          disabled={!(recordingIndex < recordingNames.length - 1 && isPaused)}
-          onClick={this.nextRecordingButtonOnClick}
+          disabled={!(selectedIndex < fileNames.length - 1 && !isPlaying)}
+          onClick={this.nextFileButtonOnClick}
         >
           Next
         </button>
@@ -143,11 +89,7 @@ export class App extends React.Component<AppProps, AppState> {
           className="Spectrogram"
           ref={this.spectrogramRef}
           width={window.innerWidth}
-          height={getSpectrogramCanvasHeight(
-            this.audioCtx,
-            this.frequencyArray,
-            this.props.config
-          )}
+          height={/* TODO */ 100}
         />
       </div>
     );
@@ -180,59 +122,26 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   updateSpectrogram(): void {
-    const canvas = this.spectrogramRef.current;
-    if (canvas === null) {
-      return;
-    }
-    const ctx = canvas.getContext("2d")!;
-
-    const {
-      analyser: audioAnalyser,
-      frequencyArray,
-      playbackStartTimeInMs,
-    } = this;
-    audioAnalyser.getByteFrequencyData(frequencyArray);
-
-    const currentTimeInMs = this.audioCtx.currentTime * 1e3;
-    const renderConfig: RenderConfig = {
-      ctx,
-      audioCtx: this.audioCtx,
-      frequencyArray,
-      bokumoConfig: this.props.config,
-      currentTimeInMs,
-      playbackStartTimeInMs,
-      previousRenderTimeInMs: this.previousRenderTimeInMs,
-    };
-    renderSpectrogram(renderConfig);
-    renderReferenceLines(renderConfig);
-
-    this.previousRenderTimeInMs = currentTimeInMs;
-
-    const elapsedTime = currentTimeInMs - playbackStartTimeInMs;
-    const playbackDurationInMs =
-      this.props.config.playbackStopInMs - this.props.config.playbackStartInMs;
-    if (elapsedTime <= playbackDurationInMs) {
-      requestAnimationFrame(this.updateSpectrogram);
-    }
+    // TODO
   }
 
-  recordButtonOnClick(): void {
-    this.setState({ isRecording: true }, this.startRecording);
-  }
-
-  previousRecordingButtonOnClick(): void {
+  previousFileButtonOnClick(): void {
     this.setState({
-      recordingIndex: Math.max(0, this.state.recordingIndex - 1),
+      selectedIndex: Math.max(0, this.state.selectedIndex - 1),
     });
   }
 
-  nextRecordingButtonOnClick(): void {
+  nextFileButtonOnClick(): void {
     this.setState({
-      recordingIndex: Math.min(
-        this.props.config.recordingNames.length - 1,
-        this.state.recordingIndex + 1
+      selectedIndex: Math.min(
+        this.props.audioFiles.length - 1,
+        this.state.selectedIndex + 1
       ),
     });
+  }
+
+  downloadButtonOnClick(): void {
+    // TODO
   }
 
   volumeSliderOnChange(change: React.ChangeEvent<HTMLInputElement>): void {
@@ -242,48 +151,8 @@ export class App extends React.Component<AppProps, AppState> {
     }
 
     const clampedVolume = Math.max(0, Math.min(unclamped, 1));
-    this.props.config.bgmElement.volume = clampedVolume;
+    // TODO
+    // this.props.config.bgmElement.volume = clampedVolume;
     this.setState({ volume: clampedVolume });
-  }
-
-  startRecording(): void {
-    this.audioChunks = [];
-    this.recorder.start();
-  }
-
-  recorderOnStart(): void {
-    this.recordingStartTimeInMs = this.audioCtx.currentTime * 1e3;
-
-    const { bgmElement } = this.props.config;
-    bgmElement.currentTime = this.props.config.playbackStartInMs * 1e-3;
-    bgmElement.volume = this.state.volume;
-    const playPromise = bgmElement.play() ?? Promise.resolve();
-
-    playPromise.then(() => {
-      const playbackStartTimeInMs = this.audioCtx.currentTime * 1e3;
-      this.playbackStartTimeInMs = playbackStartTimeInMs;
-      this.previousRenderTimeInMs = playbackStartTimeInMs;
-
-      setTimeout(
-        this.stopRecording,
-        this.props.config.playbackStopInMs - this.props.config.playbackStartInMs
-      );
-
-      this.renderSpectrogramBackground();
-      requestAnimationFrame(this.updateSpectrogram);
-    });
-  }
-
-  stopRecording(): void {
-    this.recorder.stop();
-  }
-
-  recorderOnStop(): void {
-    const audioBlob = new Blob(this.audioChunks, {
-      type: this.props.mimeType,
-    });
-    console.log({ audioBlob });
-
-    this.setState({ isRecording: false });
   }
 }

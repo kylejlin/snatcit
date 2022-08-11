@@ -18,3 +18,22 @@ export function getGithubUsernameOfHost(): undefined | string {
   }
   return m[1];
 }
+
+export function isAudioFile(file: File): boolean {
+  return /\.(?:wav|ogg|mp3|mkv)$/.test(file.name);
+}
+
+export function filterMap<T, U>(
+  arr: readonly T[],
+  f: (x: T) => { keep: false } | { keep: true; value: U }
+): U[] {
+  const result: U[] = [];
+  for (let i = 0; i < arr.length; ++i) {
+    const x = arr[i];
+    const y = f(x);
+    if (y.keep) {
+      result.push(y.value);
+    }
+  }
+  return result;
+}
