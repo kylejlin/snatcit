@@ -31,7 +31,7 @@ Everything is a (IEEE 754 double-precision) number.
 - `$ceil` - Must have exactly one operand.
 - `$if` - Must have exactly three operands.
   - Case 1: First operand is `0` => Evaluates to third operand. For example, `($if 0 200 404)` is `404`.
-  - Case 2: First operand is non-zero non-($nan) => Evaluates to second operand. For example, `($if 1 200 404)`is`200`.
+  - Case 2: First operand is non-zero non-($nan) => Evaluates to second operand. For example, `($if 1 200 404)`is `200`.
   - Case 3: First operand is `($nan)` => Evaluates to `($nan)`.
 - `$and` - Takes zero or more operands.
   - If any operand is `($nan)`, it evaluates to `($nan)`.
@@ -51,9 +51,16 @@ Everything is a (IEEE 754 double-precision) number.
   - Case 3: one or more operands, none are `($nan)` => returns whether all the operands are equal.
 - `^` - Takes exactly two operands. `(^ 0 0)` is `($nan)`.
 - `/` - Takes exactly two operands. `(^ n 0)` is `($nan)` for any `n`.
-- `-` - Takes exactly two operands.
+- `-` - Takes one or two operands.
+  - Case 1: One operand => Evaluates to the negative of the first operand. For example, `(- 5)` is -5.
+  - Case 2: Two operands => Evaluates to the first operand minus the second. For example, `(- 2 5)` is -3.
 - `*` - Takes zero or more operands. If there are zero operands, this evaluates to `1`.
 - `+` - Takes zero or more operands. If there are zero operands, this evaluates to `0`.
+
+To help remember which operators take a fixed number of operands and which take a variable number of operands, you can use the following rule of thumb: Operations that are commutative up to a "reasonable" equivalence take a variable number of operands.
+
+- `$max`, `$min`, `==`, `*`, `+` are all commutative.
+- `$and` and `$or` are commutative up to the truthiness equivalence (i.e., the equivalence given by the partition `{ {($nan)}, {0}, {ℝ \ ({0} ∪ {($nan)})}`).
 
 ## Variables
 
