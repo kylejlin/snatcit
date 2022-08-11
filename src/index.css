@@ -1,13 +1,147 @@
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+html,
+body,
+#root,
+.Wrapper,
+.App {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.Header {
+  background-color: #222;
+  color: #ddd;
+  margin-top: 0;
+  padding-top: 1em;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+
+.Wrapper {
+  text-align: center;
+}
+
+.Wrapper--prelaunch p {
+  margin: 10px;
+}
+
+.DeleteButton {
+  background-color: #c00;
+  color: #eee;
+  border: 0;
+  outline: none;
+  cursor: pointer;
+}
+
+.DeleteButton:hover {
+  background-color: #f00;
+}
+
+.StatusSection {
+  margin-top: 40px;
+  margin-bottom: 40px;
+  text-align: left;
+}
+
+.ReadyToLaunchNotification {
+  border: 1px dashed #060;
+  border-radius: 0.5em;
+  padding: 0.5em;
+  color: #060;
+  display: inline-block;
+}
+
+.BgmVolumeInputContainer {
+  margin-bottom: 1em;
+}
+
+.Wrapper--prelaunch__Button--uploadFiles,
+.Wrapper--prelaunch__Button--launch {
+  width: 50vw;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  outline: 0;
+  height: 3em;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+.App__Button--previous,
+.App__Button--next,
+.App__Button--record {
+  width: 33.333vw;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  outline: 0;
+  height: 3em;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+.SpectrogramLabel {
+  margin-top: 3em;
+}
+
+.Spectrogram {
+  /*
+   * `left` and `bottom` won't take effect until the
+   * JS dynamically runs `spectrogram.style.position = "absolute";`.
+   */
+  left: 0;
+  bottom: 0;
+
+  width: 100vw;
+  height: 100px;
+
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.Button--primary {
+  background-color: #080;
+  color: white;
+}
+
+.Button--primary:hover {
+  background-color: #0a0;
+}
+
+.Button--primary:disabled {
+  background-color: #686a;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.Button--secondary {
+  background-color: #08b;
+  color: white;
+}
+
+.Button--secondary:hover {
+  background-color: #0ae;
+}
+
+.Button--secondary:disabled {
+  background-color: #08ba;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.FileName {
+  font-family: monospace;
+  background: #ddd;
+  border-radius: 3px;
+  padding-left: 3px;
+  padding-right: 3px;
 }
