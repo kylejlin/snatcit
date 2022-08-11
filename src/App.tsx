@@ -6,15 +6,16 @@ export class App extends React.Component<AppProps, AppState> {
   private spectrogramRef: React.RefObject<HTMLCanvasElement>;
 
   private audioCtx: AudioContext;
+  private audioBufferCache: { [index: number]: undefined | AudioBuffer };
 
   constructor(props: AppProps) {
     super(props);
 
-    this.updateSpectrogram = this.updateSpectrogram.bind(this);
     this.previousFileButtonOnClick = this.previousFileButtonOnClick.bind(this);
     this.nextFileButtonOnClick = this.nextFileButtonOnClick.bind(this);
     this.downloadButtonOnClick = this.downloadButtonOnClick.bind(this);
     this.volumeSliderOnChange = this.volumeSliderOnChange.bind(this);
+    this.renderSpectrogram = this.renderSpectrogram.bind(this);
 
     this.state = {
       volume: 1,
@@ -24,13 +25,13 @@ export class App extends React.Component<AppProps, AppState> {
 
     this.spectrogramRef = React.createRef();
 
-    const audioCtx = new AudioContext();
-    this.audioCtx = audioCtx;
+    this.audioCtx = new AudioContext();
+    this.audioBufferCache = {};
   }
 
   componentDidMount(): void {
     this.resizeCanvas();
-    this.renderSpectrogramBackground();
+    this.renderSpectrogram();
   }
 
   componentDidUpdate(): void {
@@ -95,49 +96,27 @@ export class App extends React.Component<AppProps, AppState> {
     );
   }
 
-  resizeCanvas(): void {
-    const canvas = this.spectrogramRef.current;
-    if (canvas === null) {
-      return;
-    }
-
-    canvas.style.position = "static";
-
-    const rect = canvas.getBoundingClientRect();
-    const availableHeight = window.innerHeight - rect.top;
-    canvas.style.height = availableHeight + "px";
-
-    canvas.style.position = "absolute";
-  }
-
-  renderSpectrogramBackground(): void {
-    const canvas = this.spectrogramRef.current;
-    if (canvas === null) {
-      return;
-    }
-    const ctx = canvas.getContext("2d")!;
-    const { width: canvasWidth, height: canvasHeight } = ctx.canvas;
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-  }
-
-  updateSpectrogram(): void {
-    // TODO
-  }
-
   previousFileButtonOnClick(): void {
-    this.setState({
-      selectedIndex: Math.max(0, this.state.selectedIndex - 1),
-    });
+    const previousIndex = Math.max(0, this.state.selectedIndex - 1);
+    this.setState(
+      {
+        selectedIndex: previousIndex,
+      },
+      this.renderSpectrogram
+    );
   }
 
   nextFileButtonOnClick(): void {
-    this.setState({
-      selectedIndex: Math.min(
-        this.props.audioFiles.length - 1,
-        this.state.selectedIndex + 1
-      ),
-    });
+    const nextIndex = Math.min(
+      this.props.audioFiles.length - 1,
+      this.state.selectedIndex + 1
+    );
+    this.setState(
+      {
+        selectedIndex: nextIndex,
+      },
+      this.renderSpectrogram
+    );
   }
 
   downloadButtonOnClick(): void {
@@ -154,5 +133,41 @@ export class App extends React.Component<AppProps, AppState> {
     // TODO
     // this.props.config.bgmElement.volume = clampedVolume;
     this.setState({ volume: clampedVolume });
+  }
+
+  getAudioBuffer(index: number): Promise<AudioBuffer> {
+    const cachedBuffer = this.audioBufferCache[index];
+    if (cachedBuffer !== undefined) {
+      return Promise.resolve(cachedBuffer);
+    }
+    return new Promise((resolve) => {
+      const fr = new FileReader();
+      fr.addEventListener("load", () => {
+        const audioData = fr.result as ArrayBuffer;
+        this.audioCtx.decodeAudioData(audioData, resolve);
+      });
+      fr.readAsArrayBuffer(this.props.audioFiles[index]);
+    });
+  }
+
+  resizeCanvas(): void {
+    const canvas = this.spectrogramRef.current;
+    if (canvas === null) {
+      return;
+    }
+
+    canvas.style.position = "static";
+
+    const rect = canvas.getBoundingClientRect();
+    const availableHeight = window.innerHeight - rect.top;
+    canvas.style.height = availableHeight + "px";
+
+    canvas.style.position = "absolute";
+  }
+
+  renderSpectrogram(): void {
+    this.getAudioBuffer(this.state.selectedIndex).then((audioBuffer) => {
+      // TODO
+    });
   }
 }

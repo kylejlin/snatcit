@@ -1,0 +1,17 @@
+{
+  "creation_date": "2022-08-11T22:33:40.282Z",
+  "provided_field_names": ["offset", "preutterance", "fixed_region", "cutoff"],
+  "derived_fields": [
+    {
+      "name": "overlap",
+      "cmamek_src": "($floor (/ (+ offset preutterance) 2))"
+    }
+  ],
+  "default_values": {
+    "offset": 0,
+    "preutterance": 0,
+    "fixed_region": 0,
+    "cutoff": 0
+  },
+  "entries": []
+}
