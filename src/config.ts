@@ -3,16 +3,23 @@ import { hasDuplicates } from "./misc";
 
 const SNATCIT_CONFIG_JSON_KEYS = {
   creationDateString: "creation_date",
+  spectrogram: "spectrogram",
   providedFieldNames: "provided_field_names",
   derivedFields: "derived_fields",
   defaultValues: "default_values",
   entries: "entries",
 
-  derivedField: {
+  spectrogramKeys: {
+    idealBinSizeInHz: "ideal_bin_size_in_hz",
+    idealMaxFrequencyInHz: "ideal_max_frequency_in_hz",
+    colorScale: "color_scale",
+    backgroundColor: "background_color",
+  },
+  derivedFieldKeys: {
     name: "name",
     cmamekSrc: "cmamek_src",
   },
-  entry: {
+  entryKeys: {
     name: "name",
     providedFieldValues: "provided_field_values",
   },
@@ -20,6 +27,15 @@ const SNATCIT_CONFIG_JSON_KEYS = {
 
 export interface SnatcitConfig {
   readonly creationDate: Date;
+  readonly spectrogram: {
+    readonly idealBinSizeInHz: number;
+    readonly idealMaxFrequencyInHz: number;
+    readonly colorScale: readonly (readonly [
+      number,
+      readonly [number, number, number]
+    ])[];
+    readonly backgroundColor: readonly [number, number, number];
+  };
   readonly providedFieldNames: string[];
   readonly derivedFields: DerivedField[];
   readonly defaultValues: { [fieldName: string]: undefined | number };
@@ -60,26 +76,54 @@ export function parseConfig(
     const creationDate = new Date(
       json[SNATCIT_CONFIG_JSON_KEYS.creationDateString]
     );
+    const spectrogram = {
+      idealBinSizeInHz:
+        json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
+          SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.idealBinSizeInHz
+        ],
+      idealMaxFrequencyInHz:
+        json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
+          SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.idealMaxFrequencyInHz
+        ],
+      colorScale:
+        json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
+          SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.colorScale
+        ],
+      backgroundColor:
+        json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
+          SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.backgroundColor
+        ],
+    };
     const providedFieldNames =
       json[SNATCIT_CONFIG_JSON_KEYS.providedFieldNames];
     const derivedFields = json[SNATCIT_CONFIG_JSON_KEYS.derivedFields].map(
       (rawDerivedField: any) => ({
-        name: rawDerivedField[SNATCIT_CONFIG_JSON_KEYS.derivedField.name],
+        name: rawDerivedField[SNATCIT_CONFIG_JSON_KEYS.derivedFieldKeys.name],
         cmamekSrc:
-          rawDerivedField[SNATCIT_CONFIG_JSON_KEYS.derivedField.cmamekSrc],
+          rawDerivedField[SNATCIT_CONFIG_JSON_KEYS.derivedFieldKeys.cmamekSrc],
       })
     );
     const defaultValues = json[SNATCIT_CONFIG_JSON_KEYS.defaultValues];
     const entries = json[SNATCIT_CONFIG_JSON_KEYS.entries].map(
       (rawEntry: any) => ({
-        name: rawEntry[SNATCIT_CONFIG_JSON_KEYS.entry.name],
+        name: rawEntry[SNATCIT_CONFIG_JSON_KEYS.entryKeys.name],
         providedFieldValues:
-          rawEntry[SNATCIT_CONFIG_JSON_KEYS.entry.providedFieldValues],
+          rawEntry[SNATCIT_CONFIG_JSON_KEYS.entryKeys.providedFieldValues],
       })
     );
 
     if (
       !Number.isNaN(creationDate.getTime()) &&
+      typeof spectrogram.idealBinSizeInHz === "number" &&
+      typeof spectrogram.idealMaxFrequencyInHz === "number" &&
+      spectrogram.colorScale.every(
+        (colorScalePoint: any) =>
+          Array.isArray(colorScalePoint) &&
+          colorScalePoint.length === 2 &&
+          typeof colorScalePoint[0] === "number" &&
+          isValidRgbTuple(colorScalePoint[1])
+      ) &&
+      isValidRgbTuple(spectrogram.backgroundColor) &&
       Array.isArray(providedFieldNames) &&
       providedFieldNames.every((fieldName) => typeof fieldName === "string") &&
       derivedFields.every(
@@ -108,6 +152,7 @@ export function parseConfig(
         error: undefined,
         config: {
           creationDate,
+          spectrogram,
           providedFieldNames,
           derivedFields,
           defaultValues,
@@ -121,6 +166,14 @@ export function parseConfig(
   }
 }
 
+function isValidRgbTuple(v: unknown): boolean {
+  return (
+    Array.isArray(v) &&
+    v.length === 3 &&
+    v.every((colorComponent) => typeof colorComponent === "number")
+  );
+}
+
 export function stringifyConfig(config: SnatcitConfig): string {
   return JSON.stringify(
     {
@@ -129,14 +182,14 @@ export function stringifyConfig(config: SnatcitConfig): string {
       [SNATCIT_CONFIG_JSON_KEYS.providedFieldNames]: config.providedFieldNames,
       [SNATCIT_CONFIG_JSON_KEYS.derivedFields]: config.derivedFields.map(
         (derivedField) => ({
-          [SNATCIT_CONFIG_JSON_KEYS.derivedField.name]: derivedField.name,
-          [SNATCIT_CONFIG_JSON_KEYS.derivedField.cmamekSrc]:
+          [SNATCIT_CONFIG_JSON_KEYS.derivedFieldKeys.name]: derivedField.name,
+          [SNATCIT_CONFIG_JSON_KEYS.derivedFieldKeys.cmamekSrc]:
             derivedField.cmamekSrc,
         })
       ),
       [SNATCIT_CONFIG_JSON_KEYS.entries]: config.entries.map((entry) => ({
-        [SNATCIT_CONFIG_JSON_KEYS.entry.name]: entry.name,
-        [SNATCIT_CONFIG_JSON_KEYS.entry.providedFieldValues]:
+        [SNATCIT_CONFIG_JSON_KEYS.entryKeys.name]: entry.name,
+        [SNATCIT_CONFIG_JSON_KEYS.entryKeys.providedFieldValues]:
           entry.providedFieldValues,
       })),
     },

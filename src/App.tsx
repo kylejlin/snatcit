@@ -94,14 +94,6 @@ export class App extends React.Component<AppProps, AppState> {
           Next
         </button>
 
-        <p className="SpectrogramLabel">Spectrogram</p>
-        <canvas
-          className="Spectrogram"
-          ref={this.spectrogramRef}
-          width={window.innerWidth}
-          height={/* TODO */ 100}
-        />
-
         {namesOfDerivedFieldsThatCouldNotBeComputed.length > 0 && (
           <>
             <p>Fields that could not be computed:</p>
@@ -112,6 +104,14 @@ export class App extends React.Component<AppProps, AppState> {
             </ol>
           </>
         )}
+
+        <p className="SpectrogramLabel">Spectrogram</p>
+        <canvas
+          className="Spectrogram"
+          ref={this.spectrogramRef}
+          width={window.innerWidth}
+          height={/* TODO */ 100}
+        />
       </div>
     );
   }
@@ -197,7 +197,12 @@ export class App extends React.Component<AppProps, AppState> {
       this.props.audioFiles[this.state.selectedIndex].name
     );
     this.getAudioBuffer(this.state.selectedIndex).then((audioBuffer) => {
-      renderSpectrogramAndMarkings(ctx, audioBuffer, computedValues);
+      renderSpectrogramAndMarkings(
+        ctx,
+        audioBuffer,
+        computedValues,
+        this.state.config
+      );
     });
   }
 }
