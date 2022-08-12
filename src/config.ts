@@ -13,6 +13,7 @@ const SNATCIT_CONFIG_JSON_KEYS = {
     idealBinSizeInHz: "ideal_bin_size_in_hz",
     idealMaxFrequencyInHz: "ideal_max_frequency_in_hz",
     windowSizeInMs: "window_size_in_ms",
+    stepSizeInMs: "step_size_in_ms",
     colorScale: "color_scale",
     backgroundColor: "background_color",
   },
@@ -32,6 +33,7 @@ export interface SnatcitConfig {
     readonly idealBinSizeInHz: number;
     readonly idealMaxFrequencyInHz: number;
     readonly windowSizeInMs: number;
+    readonly stepSizeInMs: number;
     readonly colorScale: readonly (readonly [
       number,
       readonly [number, number, number]
@@ -91,6 +93,10 @@ export function parseConfig(
         json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
           SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.windowSizeInMs
         ],
+      stepSizeInMs:
+        json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
+          SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.stepSizeInMs
+        ],
       colorScale:
         json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
           SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.colorScale
@@ -123,6 +129,7 @@ export function parseConfig(
       typeof spectrogram.idealBinSizeInHz === "number" &&
       typeof spectrogram.idealMaxFrequencyInHz === "number" &&
       typeof spectrogram.windowSizeInMs === "number" &&
+      typeof spectrogram.stepSizeInMs === "number" &&
       spectrogram.colorScale.every(
         (colorScalePoint: any) =>
           Array.isArray(colorScalePoint) &&
