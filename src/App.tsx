@@ -197,12 +197,13 @@ export class App extends React.Component<AppProps, AppState> {
       this.props.audioFiles[this.state.selectedIndex].name
     );
     this.getAudioBuffer(this.state.selectedIndex).then((audioBuffer) => {
-      renderSpectrogramAndMarkings(
+      renderSpectrogramAndMarkings({
         ctx,
+        audioCtx: this.audioCtx,
         audioBuffer,
         computedValues,
-        this.state.config
-      );
+        snatcitConfig: this.state.config,
+      });
     });
   }
 }

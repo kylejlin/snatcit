@@ -51,3 +51,7 @@ export function hasDuplicates<T>(
   }
   return false;
 }
+
+export function roundUpToPowerOf2(n: number): number {
+  return Math.pow(2, Math.ceil(Math.log2(n)));
+}
