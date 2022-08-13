@@ -17,7 +17,7 @@ export class App extends React.Component<AppProps, AppState> {
   private audioDataCache: { [index: number]: undefined | AudioData };
   private spectrogramImageDataCache: { [index: number]: undefined | ImageData };
 
-  private renderPromise: undefined | Promise<null>;
+  private renderPromise: undefined | Promise<undefined>;
 
   constructor(props: AppProps) {
     super(props);
@@ -273,7 +273,7 @@ export class App extends React.Component<AppProps, AppState> {
     this.renderPromise = this.useSelectedAudioFileToRender([
       this.renderSpectrogramUsingCache,
       renderMarkings,
-    ]).then(() => {
+    ]).then((): undefined => {
       canvas.style.position = "static";
 
       const rect = canvas.getBoundingClientRect();
@@ -284,7 +284,7 @@ export class App extends React.Component<AppProps, AppState> {
 
       this.renderPromise = undefined;
 
-      return null;
+      return;
     });
   }
 
@@ -309,10 +309,10 @@ export class App extends React.Component<AppProps, AppState> {
       rc: RenderConfig,
       computedValues: readonly LabeledFieldValue[]
     ) => void | Promise<void>)[]
-  ): Promise<null> {
+  ): Promise<undefined> {
     const canvas = this.spectrogramRef.current;
     if (canvas === null) {
-      return Promise.resolve(null);
+      return Promise.resolve(undefined);
     }
     const ctx = canvas.getContext("2d")!;
 
@@ -329,7 +329,7 @@ export class App extends React.Component<AppProps, AppState> {
           audioBuffer: audioData.audioBuffer,
           snatcitConfig: this.state.config,
         };
-        function f(i: number): Promise<null> {
+        function f(i: number): Promise<undefined> {
           return Promise.resolve(
             renderers[i](renderConfig, computedValues)
           ).then(() => {
@@ -337,7 +337,7 @@ export class App extends React.Component<AppProps, AppState> {
             if (next < renderers.length) {
               return f(next);
             } else {
-              return Promise.resolve(null);
+              return Promise.resolve(undefined);
             }
           });
         }
