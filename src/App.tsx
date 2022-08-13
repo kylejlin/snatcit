@@ -1,10 +1,11 @@
 import React from "react";
 import { AppProps, AppState } from "./state";
 import { Header } from "./Header";
-import { getAllFieldValuesForEntry } from "./config";
+import { getAllFieldValuesForEntry, LabeledFieldValue } from "./config";
 import {
+  RenderConfig,
+  renderMarkings,
   renderSpectrogram,
-  renderSpectrogramAndMarkings,
 } from "./canvas/renderSpectrogramAndMarkings";
 import { getSpectrumData, SpectrumData } from "./canvas/calculationUtils";
 
@@ -23,9 +24,9 @@ export class App extends React.Component<AppProps, AppState> {
     this.nextFileButtonOnClick = this.nextFileButtonOnClick.bind(this);
     this.downloadButtonOnClick = this.downloadButtonOnClick.bind(this);
     this.volumeSliderOnChange = this.volumeSliderOnChange.bind(this);
-    this.renderSpectrogramAndMarkingsUsingSelectedAudioFile =
-      this.renderSpectrogramAndMarkingsUsingSelectedAudioFile.bind(this);
     this.windowOnResize = this.windowOnResize.bind(this);
+    this.renderSpectrogramUsingCache =
+      this.renderSpectrogramUsingCache.bind(this);
 
     this.state = {
       volume: 1,
@@ -48,13 +49,12 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   componentDidMount(): void {
-    this.resizeCanvas();
-    this.renderSpectrogramAndMarkingsUsingSelectedAudioFile();
+    this.resizeAndRerenderCanvas();
     window.addEventListener("resize", this.windowOnResize);
   }
 
   componentDidUpdate(): void {
-    this.resizeCanvas();
+    this.resizeAndRerenderCanvas();
   }
 
   componentWillUnmount(): void {
@@ -125,12 +125,7 @@ export class App extends React.Component<AppProps, AppState> {
         )}
 
         <p className="SpectrogramLabel">Spectrogram</p>
-        <canvas
-          className="Spectrogram"
-          ref={this.spectrogramRef}
-          width={window.innerWidth}
-          height={/* TODO */ 100}
-        />
+        <canvas className="Spectrogram" ref={this.spectrogramRef} />
       </div>
     );
   }
@@ -141,7 +136,11 @@ export class App extends React.Component<AppProps, AppState> {
       {
         selectedIndex: previousIndex,
       },
-      this.renderSpectrogramAndMarkingsUsingSelectedAudioFile
+      () =>
+        this.useSelectedAudioFileToRender([
+          this.renderSpectrogramUsingCache,
+          renderMarkings,
+        ])
     );
   }
 
@@ -154,7 +153,11 @@ export class App extends React.Component<AppProps, AppState> {
       {
         selectedIndex: nextIndex,
       },
-      this.renderSpectrogramAndMarkingsUsingSelectedAudioFile
+      () =>
+        this.useSelectedAudioFileToRender([
+          this.renderSpectrogramUsingCache,
+          renderMarkings,
+        ])
     );
   }
 
@@ -176,6 +179,20 @@ export class App extends React.Component<AppProps, AppState> {
 
   windowOnResize(): void {
     this.spectrogramImageDataCache = {};
+    this.resizeAndRerenderCanvas();
+  }
+
+  renderSpectrogramUsingCache(renderConfig: RenderConfig): void {
+    const canvas = this.spectrogramRef.current;
+    if (canvas === null) {
+      return;
+    }
+    const ctx = canvas.getContext("2d")!;
+    this.getSpectrogramImageData(renderConfig.fileIndex).then((imgData) => {
+      canvas.width = imgData.width;
+      canvas.height = imgData.height;
+      ctx.putImageData(imgData, 0, 0);
+    });
   }
 
   getAudioData(index: number): Promise<AudioData> {
@@ -218,6 +235,7 @@ export class App extends React.Component<AppProps, AppState> {
       internalCanvasCtx.canvas.width = canvasWidth;
       internalCanvasCtx.canvas.height = canvasHeight;
       renderSpectrogram({
+        fileIndex: index,
         ctx: internalCanvasCtx,
         audioCtx: this.audioCtx,
         audioBuffer,
@@ -235,25 +253,35 @@ export class App extends React.Component<AppProps, AppState> {
     });
   }
 
-  resizeCanvas(): void {
+  resizeAndRerenderCanvas(): void {
     const canvas = this.spectrogramRef.current;
     if (canvas === null) {
       return;
     }
 
-    canvas.style.position = "static";
+    this.useSelectedAudioFileToRender([
+      this.renderSpectrogramUsingCache,
+      renderMarkings,
+    ]).then(() => {
+      canvas.style.position = "static";
 
-    const rect = canvas.getBoundingClientRect();
-    const availableHeight = window.innerHeight - rect.top;
-    canvas.style.height = availableHeight + "px";
+      const rect = canvas.getBoundingClientRect();
+      const availableHeight = window.innerHeight - rect.top;
+      canvas.style.height = availableHeight + "px";
 
-    canvas.style.position = "absolute";
+      canvas.style.position = "absolute";
+    });
   }
 
-  renderSpectrogramAndMarkingsUsingSelectedAudioFile(): void {
+  useSelectedAudioFileToRender(
+    renderers: readonly ((
+      rc: RenderConfig,
+      computedValues: readonly LabeledFieldValue[]
+    ) => void)[]
+  ): Promise<void> {
     const canvas = this.spectrogramRef.current;
     if (canvas === null) {
-      return;
+      return Promise.resolve();
     }
     const ctx = canvas.getContext("2d")!;
 
@@ -261,16 +289,15 @@ export class App extends React.Component<AppProps, AppState> {
       this.state.config,
       this.props.audioFiles[this.state.selectedIndex].name
     );
-    this.getAudioData(this.state.selectedIndex).then((audioData) => {
-      renderSpectrogramAndMarkings(
-        {
-          ctx,
-          audioCtx: this.audioCtx,
-          audioBuffer: audioData.audioBuffer,
-          snatcitConfig: this.state.config,
-        },
-        computedValues
-      );
+    return this.getAudioData(this.state.selectedIndex).then((audioData) => {
+      const renderConfig: RenderConfig = {
+        fileIndex: this.state.selectedIndex,
+        ctx,
+        audioCtx: this.audioCtx,
+        audioBuffer: audioData.audioBuffer,
+        snatcitConfig: this.state.config,
+      };
+      renderers.forEach((render) => render(renderConfig, computedValues));
     });
   }
 }

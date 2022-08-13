@@ -20,18 +20,11 @@ import {
 const MAX_MAGNITUDE = Math.SQRT2;
 
 export interface RenderConfig {
+  fileIndex: number;
   ctx: CanvasRenderingContext2D;
   audioCtx: AudioContext;
   audioBuffer: AudioBuffer;
   snatcitConfig: SnatcitConfig;
-}
-
-export function renderSpectrogramAndMarkings(
-  renderConfig: RenderConfig,
-  computedValues: readonly LabeledFieldValue[]
-): void {
-  renderSpectrogram(renderConfig);
-  renderMarkings(renderConfig, computedValues);
 }
 
 export function renderSpectrogram(renderConfig: RenderConfig): void {
