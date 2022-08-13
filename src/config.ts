@@ -61,6 +61,7 @@ export interface Entry {
 export interface LabeledFieldValue {
   readonly fieldName: string;
   readonly value: number;
+  readonly wasProvided: boolean;
 }
 
 export function parseConfig(
@@ -235,7 +236,7 @@ export function getAllFieldValuesForEntry(
       );
     }
 
-    computedValues.push({ fieldName, value });
+    computedValues.push({ fieldName, value, wasProvided: true });
   }
 
   for (let i = 0; i < config.derivedFields.length; ++i) {
@@ -246,7 +247,11 @@ export function getAllFieldValuesForEntry(
     const evalRes = evalCmamekExpression(cmamekSrc, context);
 
     if (evalRes.succeeded) {
-      computedValues.push({ fieldName: name, value: evalRes.value });
+      computedValues.push({
+        fieldName: name,
+        value: evalRes.value,
+        wasProvided: false,
+      });
     } else {
       namesOfDerivedFieldsThatCouldNotBeComputed.push(name);
     }
