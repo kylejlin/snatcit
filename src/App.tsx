@@ -188,14 +188,16 @@ export class App extends React.Component<AppProps, AppState> {
       return;
     }
     const ctx = canvas.getContext("2d")!;
-    this.getSpectrogramImageData(renderConfig.fileIndex).then((imgData) => {
-      canvas.width = imgData.width;
-      canvas.height = imgData.height;
-      ctx.putImageData(imgData, 0, 0);
-    });
+    this.getSpectrogramImageData(renderConfig.fileIndex, canvas.width).then(
+      (imgData) => {
+        canvas.width = imgData.width;
+        canvas.height = imgData.height;
+        ctx.putImageData(imgData, 0, 0);
+      }
+    );
   }
 
-  getAudioData(index: number): Promise<AudioData> {
+  getAudioData(index: number, canvasWidth: number): Promise<AudioData> {
     const cachedData = this.audioDataCache[index];
     if (cachedData !== undefined) {
       return Promise.resolve(cachedData);
@@ -206,6 +208,7 @@ export class App extends React.Component<AppProps, AppState> {
         const audioData = fr.result as ArrayBuffer;
         this.audioCtx.decodeAudioData(audioData, (audioBuffer) => {
           const spectrumData = getSpectrumFftData({
+            canvasWidth,
             audioBuffer,
             snatcitConfig: this.state.config,
           });
@@ -222,13 +225,16 @@ export class App extends React.Component<AppProps, AppState> {
     });
   }
 
-  getSpectrogramImageData(index: number): Promise<ImageData> {
+  getSpectrogramImageData(
+    index: number,
+    canvasWidth: number
+  ): Promise<ImageData> {
     const cachedData = this.spectrogramImageDataCache[index];
     if (cachedData !== undefined) {
       return Promise.resolve(cachedData);
     }
 
-    return this.getAudioData(index).then(
+    return this.getAudioData(index, canvasWidth).then(
       ({ audioBuffer, spectrumFftData: spectrumData }) => {
         const { internalCanvasCtx } = this;
         const canvasWidth = window.innerWidth;
@@ -291,16 +297,18 @@ export class App extends React.Component<AppProps, AppState> {
       this.state.config,
       this.props.audioFiles[this.state.selectedIndex].name
     );
-    return this.getAudioData(this.state.selectedIndex).then((audioData) => {
-      const renderConfig: RenderConfig = {
-        fileIndex: this.state.selectedIndex,
-        ctx,
-        audioCtx: this.audioCtx,
-        audioBuffer: audioData.audioBuffer,
-        snatcitConfig: this.state.config,
-      };
-      renderers.forEach((render) => render(renderConfig, computedValues));
-    });
+    return this.getAudioData(this.state.selectedIndex, canvas.width).then(
+      (audioData) => {
+        const renderConfig: RenderConfig = {
+          fileIndex: this.state.selectedIndex,
+          ctx,
+          audioCtx: this.audioCtx,
+          audioBuffer: audioData.audioBuffer,
+          snatcitConfig: this.state.config,
+        };
+        renderers.forEach((render) => render(renderConfig, computedValues));
+      }
+    );
   }
 }
 

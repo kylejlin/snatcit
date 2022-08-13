@@ -8,19 +8,21 @@ export interface SpectrumFftData {
 }
 
 export function getSpectrumFftData({
+  canvasWidth,
   audioBuffer,
   snatcitConfig,
 }: {
+  readonly canvasWidth: number;
   readonly audioBuffer: AudioBuffer;
   readonly snatcitConfig: SnatcitConfig;
 }): SpectrumFftData {
-  const windowSizeInFrames = Math.floor(
-    snatcitConfig.spectrogram.idealWindowSizeInMs *
-      1e-3 *
-      audioBuffer.sampleRate
-  );
+  const { windowSizeInFractionalFrames } = getSpectrogramRenderData({
+    canvasWidth,
+    audioBuffer,
+    snatcitConfig,
+  });
   /** We can't use the window size as-is, because FFT requires a power of 2. */
-  const fftInputLength = roundUpToPowerOf2(windowSizeInFrames);
+  const fftInputLength = roundUpToPowerOf2(windowSizeInFractionalFrames);
   const hzPerFftBin = audioBuffer.sampleRate / fftInputLength;
   const fftBinsPerSpectrumBin = Math.floor(
     snatcitConfig.spectrogram.idealBinSizeInHz / hzPerFftBin
@@ -35,6 +37,60 @@ export function getSpectrumFftData({
   );
   const spectrumBins = Math.floor(maxFftBins / fftBinsPerSpectrumBin);
   return { fftInputLength, fftBinsPerSpectrumBin, spectrumBins };
+}
+
+export interface SpectrogramRenderData {
+  readonly numberOfFullSpectra: number;
+  readonly stepSizeInFractionalFrames: number;
+  readonly windowSizeInFractionalFrames: number;
+  readonly spectrumCanvasFractionalWidth: number;
+  readonly spectrumCanvasCeiledWidth: number;
+}
+
+export function getSpectrogramRenderData({
+  canvasWidth,
+  audioBuffer,
+  snatcitConfig,
+}: {
+  readonly canvasWidth: number;
+  readonly audioBuffer: AudioBuffer;
+  readonly snatcitConfig: SnatcitConfig;
+}): SpectrogramRenderData {
+  const songLengthInMs = (audioBuffer.length / audioBuffer.sampleRate) * 1e3;
+  const idealNumberOfFractionalSpectra =
+    1 +
+    (songLengthInMs - snatcitConfig.spectrogram.idealWindowSizeInMs) /
+      snatcitConfig.spectrogram.idealStepSizeInMs;
+  const numberOfFractionalSpectra = Math.min(
+    idealNumberOfFractionalSpectra,
+    canvasWidth
+  );
+  const spectrumCanvasFractionalWidth =
+    canvasWidth / Math.ceil(numberOfFractionalSpectra);
+  const spectrumCanvasCeiledWidth = Math.ceil(spectrumCanvasFractionalWidth);
+
+  const windowSizeInFractionalFrames =
+    snatcitConfig.spectrogram.idealWindowSizeInMs *
+    1e-3 *
+    audioBuffer.sampleRate;
+  const idealStepSizeInFractionalFrames =
+    snatcitConfig.spectrogram.idealStepSizeInMs * 1e-3 * audioBuffer.sampleRate;
+  const minStepSizeInFractionalFrames =
+    (audioBuffer.length - windowSizeInFractionalFrames) /
+    (numberOfFractionalSpectra - 1);
+  const stepSizeInFractionalFrames = Math.max(
+    idealStepSizeInFractionalFrames,
+    minStepSizeInFractionalFrames
+  );
+  const numberOfFullSpectra = Math.floor(numberOfFractionalSpectra);
+
+  return {
+    numberOfFullSpectra,
+    stepSizeInFractionalFrames,
+    windowSizeInFractionalFrames,
+    spectrumCanvasFractionalWidth,
+    spectrumCanvasCeiledWidth,
+  };
 }
 
 export interface LazyAudioBufferSlice {
