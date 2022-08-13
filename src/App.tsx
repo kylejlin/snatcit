@@ -2,13 +2,18 @@ import React from "react";
 import { AppProps, AppState } from "./state";
 import { Header } from "./Header";
 import { getAllFieldValuesForEntry } from "./config";
-import { renderSpectrogramAndMarkings } from "./canvas/renderSpectrogramAndMarkings";
+import {
+  renderSpectrogram,
+  renderSpectrogramAndMarkings,
+} from "./canvas/renderSpectrogramAndMarkings";
+import { getSpectrumData, SpectrumData } from "./canvas/calculationUtils";
 
 export class App extends React.Component<AppProps, AppState> {
   private spectrogramRef: React.RefObject<HTMLCanvasElement>;
 
+  private internalCanvasCtx: CanvasRenderingContext2D;
   private audioCtx: AudioContext;
-  private audioBufferCache: { [index: number]: undefined | AudioBuffer };
+  private fileDataCache: { [index: number]: undefined | AudioFileData };
 
   constructor(props: AppProps) {
     super(props);
@@ -19,6 +24,7 @@ export class App extends React.Component<AppProps, AppState> {
     this.volumeSliderOnChange = this.volumeSliderOnChange.bind(this);
     this.renderSpectrogramAndMarkingsUsingSelectedAudioFile =
       this.renderSpectrogramAndMarkingsUsingSelectedAudioFile.bind(this);
+    this.windowOnResize = this.windowOnResize.bind(this);
 
     this.state = {
       volume: 1,
@@ -29,17 +35,28 @@ export class App extends React.Component<AppProps, AppState> {
 
     this.spectrogramRef = React.createRef();
 
+    const internalCanvasCtx = document.createElement("canvas").getContext("2d");
+    if (internalCanvasCtx === null) {
+      throw new Error("Could not create internal canvas context.");
+    }
+    this.internalCanvasCtx = internalCanvasCtx;
+
     this.audioCtx = new AudioContext();
-    this.audioBufferCache = {};
+    this.fileDataCache = {};
   }
 
   componentDidMount(): void {
     this.resizeCanvas();
     this.renderSpectrogramAndMarkingsUsingSelectedAudioFile();
+    window.addEventListener("resize", this.windowOnResize);
   }
 
   componentDidUpdate(): void {
     this.resizeCanvas();
+  }
+
+  componentWillUnmount(): void {
+    window.removeEventListener("resize", this.windowOnResize);
   }
 
   render(): React.ReactElement {
@@ -155,16 +172,51 @@ export class App extends React.Component<AppProps, AppState> {
     this.setState({ volume: clampedVolume });
   }
 
-  getAudioBuffer(index: number): Promise<AudioBuffer> {
-    const cachedBuffer = this.audioBufferCache[index];
-    if (cachedBuffer !== undefined) {
-      return Promise.resolve(cachedBuffer);
+  windowOnResize(): void {
+    this.fileDataCache = {};
+  }
+
+  getFileData(index: number): Promise<AudioFileData> {
+    const fileData = this.fileDataCache[index];
+    if (fileData !== undefined) {
+      return Promise.resolve(fileData);
     }
     return new Promise((resolve) => {
       const fr = new FileReader();
       fr.addEventListener("load", () => {
         const audioData = fr.result as ArrayBuffer;
-        this.audioCtx.decodeAudioData(audioData, resolve);
+        this.audioCtx.decodeAudioData(audioData, (audioBuffer) => {
+          const spectrumData = getSpectrumData({
+            audioBuffer,
+            snatcitConfig: this.state.config,
+          });
+
+          const { internalCanvasCtx } = this;
+          const canvasWidth = window.innerWidth;
+          const canvasHeight = spectrumData.spectrumBins;
+          internalCanvasCtx.canvas.width = canvasWidth;
+          internalCanvasCtx.canvas.height = canvasHeight;
+          renderSpectrogram({
+            ctx: internalCanvasCtx,
+            audioCtx: this.audioCtx,
+            audioBuffer,
+            snatcitConfig: this.state.config,
+          });
+
+          const data: AudioFileData = {
+            audioBuffer,
+            spectrumData,
+            spectrumImageData: internalCanvasCtx.getImageData(
+              0,
+              0,
+              canvasWidth,
+              canvasHeight
+            ),
+          };
+
+          this.fileDataCache[index] = data;
+          resolve(data);
+        });
       });
       fr.readAsArrayBuffer(this.props.audioFiles[index]);
     });
@@ -196,14 +248,22 @@ export class App extends React.Component<AppProps, AppState> {
       this.state.config,
       this.props.audioFiles[this.state.selectedIndex].name
     );
-    this.getAudioBuffer(this.state.selectedIndex).then((audioBuffer) => {
-      renderSpectrogramAndMarkings({
-        ctx,
-        audioCtx: this.audioCtx,
-        audioBuffer,
-        computedValues,
-        snatcitConfig: this.state.config,
-      });
+    this.getFileData(this.state.selectedIndex).then((fileData) => {
+      renderSpectrogramAndMarkings(
+        {
+          ctx,
+          audioCtx: this.audioCtx,
+          audioBuffer: fileData.audioBuffer,
+          snatcitConfig: this.state.config,
+        },
+        computedValues
+      );
     });
   }
+}
+
+export interface AudioFileData {
+  readonly audioBuffer: AudioBuffer;
+  readonly spectrumData: SpectrumData;
+  readonly spectrumImageData: ImageData;
 }
