@@ -67,12 +67,14 @@ export class App extends React.Component<AppProps, AppState> {
 
   render(): React.ReactElement {
     const fileNames = this.props.audioFiles.map((f) => f.name);
-    const { selectedIndex, isPlaying } = this.state;
-    const { namesOfDerivedFieldsThatCouldNotBeComputed } =
-      getAllFieldValuesForEntry(
-        this.state.config,
-        this.props.audioFiles[this.state.selectedIndex].name
-      );
+    const { selectedIndex, isPlaying, config } = this.state;
+    const allFieldNames = config.providedFieldNames.concat(
+      config.derivedFields.map((f) => f.name)
+    );
+    const { computedValues } = getAllFieldValuesForEntry(
+      this.state.config,
+      this.props.audioFiles[this.state.selectedIndex].name
+    );
     return (
       <div className="App">
         <Header />
@@ -83,7 +85,7 @@ export class App extends React.Component<AppProps, AppState> {
           {selectedIndex + 1}/{fileNames.length})
         </p>
 
-        <div className="BgmVolumeInputContainer">
+        <div className="VolumeInputContainer">
           <label>Volume: </label>
           <input
             type="range"
@@ -117,16 +119,26 @@ export class App extends React.Component<AppProps, AppState> {
           Next
         </button>
 
-        {namesOfDerivedFieldsThatCouldNotBeComputed.length > 0 && (
-          <>
-            <p>Fields that could not be computed:</p>
-            <ol>
-              {namesOfDerivedFieldsThatCouldNotBeComputed.map((name) => (
-                <li key={name}>{name}</li>
-              ))}
-            </ol>
-          </>
-        )}
+        <h2 className="FieldsTableLabel">Fields</h2>
+        <table className="FieldsTable">
+          <tbody>
+            <tr>
+              <th>Name</th>
+              <th>Value</th>
+            </tr>
+            {allFieldNames.map((fieldName) => {
+              const entry = computedValues.find(
+                (entry) => entry.fieldName === fieldName
+              );
+              return (
+                <tr key={fieldName}>
+                  <td>{fieldName}</td>
+                  <td>{entry === undefined ? "Error" : entry.value}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
 
         <p className="SpectrogramLabel">Spectrogram</p>
         <canvas className="Spectrogram" ref={this.spectrogramRef} />
