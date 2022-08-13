@@ -1,5 +1,5 @@
 import { evalCmamekExpression } from "./lib/cmamek";
-import { hasDuplicates } from "./misc";
+import { hasDuplicate } from "./misc";
 
 const SNATCIT_CONFIG_JSON_KEYS = {
   creationDateString: "creation_date",
@@ -145,7 +145,7 @@ export function parseConfig(
           typeof derivedField.name === "string" &&
           typeof derivedField.cmamekSrc === "string"
       ) &&
-      !hasDuplicates<string>(
+      !hasDuplicate<string>(
         providedFieldNames.concat(
           derivedFields.map((f: { name: string }) => f.name)
         ),
@@ -160,7 +160,7 @@ export function parseConfig(
           typeof entry.providedFieldValues === "object" &&
           entry.providedFieldValues !== null
       ) &&
-      !hasDuplicates<{ name: string }>(entries, (a, b) => a.name === b.name)
+      !hasDuplicate<{ name: string }>(entries, (a, b) => a.name === b.name)
     ) {
       return {
         error: undefined,

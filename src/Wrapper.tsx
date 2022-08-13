@@ -2,7 +2,13 @@ import React from "react";
 import { App } from "./App";
 import { parseConfig, SnatcitConfig } from "./config";
 import { Header } from "./Header";
-import { filterMap, getGithubUsernameOfHost, isAudioFile } from "./misc";
+import {
+  filterMap,
+  getArbitraryDuplicate,
+  getGithubUsernameOfHost,
+  hasDuplicate,
+  isAudioFile,
+} from "./misc";
 import {
   WrapperState,
   WrapperStateKind,
@@ -71,8 +77,12 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
     const validConfigFileInfo = state.fileInfo.filter(
       (info) => info.kind === "config" && info.isValid
     );
-    const audioFileInfo = state.fileInfo.filter(
-      (info) => info.kind === "audio"
+    const audioFiles = filterMap<FileInfo, File>(state.fileInfo, (info) =>
+      info.kind === "audio" ? { keep: true, value: info.file } : { keep: false }
+    );
+    const audioFileDuplicateStatus = getArbitraryDuplicate<File>(
+      audioFiles,
+      (a, b) => a.name === b.name
     );
 
     return (
@@ -140,7 +150,17 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
                 </li>
               )}
 
-              {audioFileInfo.length === 0 && <li>Missing audio file.</li>}
+              {audioFiles.length === 0 && <li>Missing audio file.</li>}
+
+              {audioFileDuplicateStatus.hasDuplicate && (
+                <li>
+                  More than one file is name{" "}
+                  <span className="FileName">
+                    {audioFileDuplicateStatus.duplicate.name}
+                  </span>
+                  . You can only have at most one.
+                </li>
+              )}
             </ol>
           </div>
         )}
@@ -244,7 +264,36 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
 
         return {
           ...prevState,
-          fileInfo: prevState.fileInfo.concat(newFileInfo),
+          fileInfo: prevState.fileInfo.concat(newFileInfo).sort((a, b) => {
+            if (a.kind === "config") {
+              if (a.isValid) {
+                if (b.kind === "config" && b.isValid) {
+                  return (
+                    a.config.creationDate.getTime() -
+                    b.config.creationDate.getTime()
+                  );
+                } else {
+                  return -1;
+                }
+              } else {
+                if (b.kind === "config") {
+                  if (b.isValid) {
+                    return 1;
+                  } else {
+                    return 0;
+                  }
+                } else {
+                  return -1;
+                }
+              }
+            } else {
+              if (b.kind === "config") {
+                return 1;
+              } else {
+                return a.file.name.localeCompare(b.file.name);
+              }
+            }
+          }),
         };
       });
     });
@@ -321,6 +370,10 @@ function getConfigAndAudioFileFromFileInfoArray(
   const audioFiles: File[] = filterMap<FileInfo, File>(allFileInfo, (info) =>
     info.kind === "audio" ? { keep: true, value: info.file } : { keep: false }
   );
+
+  if (hasDuplicate<File>(audioFiles, (a, b) => a.name === b.name)) {
+    return;
+  }
 
   return [newestConfig, audioFiles];
 }

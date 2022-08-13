@@ -38,18 +38,25 @@ export function filterMap<T, U>(
   return result;
 }
 
-export function hasDuplicates<T>(
+export function hasDuplicate<T>(
   arr: readonly T[],
   isEqual: (a: T, b: T) => boolean
 ): boolean {
+  return getArbitraryDuplicate(arr, isEqual).hasDuplicate;
+}
+
+export function getArbitraryDuplicate<T>(
+  arr: readonly T[],
+  isEqual: (a: T, b: T) => boolean
+): { hasDuplicate: true; duplicate: T } | { hasDuplicate: false } {
   for (let i = 0; i < arr.length; ++i) {
     for (let j = i + 1; j < arr.length; ++j) {
       if (isEqual(arr[i], arr[j])) {
-        return true;
+        return { hasDuplicate: true, duplicate: arr[i] };
       }
     }
   }
-  return false;
+  return { hasDuplicate: false };
 }
 
 export function roundUpToPowerOf2(n: number): number {
