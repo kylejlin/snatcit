@@ -29,6 +29,12 @@ const SNATCIT_CONFIG_JSON_KEYS = {
   },
 } as const;
 
+export const CONFIG_FILE_DEFAULT_NAME = "snatcit.json";
+
+export function isConfigFileName(fileName: string): boolean {
+  return /^snatcit(?:-\d+)?\.json$/i.test(fileName);
+}
+
 export interface SnatcitConfig {
   readonly creationDate: Date;
   readonly spectrogram: {

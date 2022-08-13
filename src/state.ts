@@ -1,6 +1,4 @@
-import { SnatcitConfig } from "../config";
-
-export const CONFIG_FILE_NAME = "snatcit.json";
+import { SnatcitConfig } from "./config";
 
 /**
  * This isn't meant to be an exhaustive list of all audio MIME types.
@@ -48,7 +46,7 @@ export interface AudioFileInfo {
 export interface ValidConfigFileInfo {
   readonly kind: "config";
   readonly id: number;
-
+  readonly file: File;
   readonly isValid: true;
   readonly config: SnatcitConfig;
 }
@@ -56,7 +54,7 @@ export interface ValidConfigFileInfo {
 export interface InvalidConfigFileInfo {
   readonly kind: "config";
   readonly id: number;
-
+  readonly file: File;
   readonly isValid: false;
 }
 

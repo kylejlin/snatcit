@@ -1,6 +1,11 @@
 import React from "react";
 import { App } from "./App";
-import { parseConfig, SnatcitConfig } from "./config";
+import {
+  CONFIG_FILE_DEFAULT_NAME,
+  isConfigFileName,
+  parseConfig,
+  SnatcitConfig,
+} from "./config";
 import { Header } from "./Header";
 import {
   filterMap,
@@ -16,12 +21,10 @@ import {
   LaunchSucceededState,
   BrowserAudioMimeType,
   FileInfo,
-  CONFIG_FILE_NAME,
   UnidentifiedFileInfo,
   ValidConfigFileInfo,
   ALL_BROWSER_AUDIO_MIME_TYPES,
 } from "./state";
-import { getFileNameFromFileInfo } from "./state/logic";
 
 const ARBITRARY_PREFIX_THAT_WILL_DEFINITELY_NOT_BE_CONTAINED_IN_A_PATH =
   "/\\#@:&{}*<>";
@@ -101,8 +104,8 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
 
         <p>
           Please upload files. You can only launch the app after you upload one
-          or more <span className="FileName">{CONFIG_FILE_NAME}</span> files and
-          one or more audio files.
+          or more <span className="FileName">{CONFIG_FILE_DEFAULT_NAME}</span>{" "}
+          files and one or more audio files.
         </p>
 
         {state.fileInfo.length > 0 && (
@@ -114,11 +117,11 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
                   key={
                     i +
                     ARBITRARY_PREFIX_THAT_WILL_DEFINITELY_NOT_BE_CONTAINED_IN_A_PATH +
-                    getFileNameFromFileInfo(info)
+                    info.file.name
                   }
                 >
                   <span className="FileName">
-                    {getFileNameFromFileInfo(info)}
+                    {info.file.name}
                     {info.kind === "config" && !info.isValid
                       ? " (invalid)"
                       : ""}
@@ -147,7 +150,8 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
             <ol>
               {validConfigFileInfo.length === 0 && (
                 <li>
-                  Missing <span className="FileName">{CONFIG_FILE_NAME}</span>{" "}
+                  Missing{" "}
+                  <span className="FileName">{CONFIG_FILE_DEFAULT_NAME}</span>{" "}
                   file.
                 </li>
               )}
@@ -220,16 +224,17 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
     const newPartialInfoProm: Promise<(undefined | UnidentifiedFileInfo)[]> =
       Promise.all(
         files.map((file): Promise<undefined | UnidentifiedFileInfo> => {
-          if (file.name === CONFIG_FILE_NAME) {
+          if (isConfigFileName(file.name)) {
             return new Promise((resolve) => {
               const fr = new FileReader();
               fr.addEventListener("load", () => {
                 const parseResult = parseConfig(fr.result as string);
                 if (parseResult.error !== undefined) {
-                  resolve({ kind: "config", isValid: false });
+                  resolve({ kind: "config", file, isValid: false });
                 } else {
                   resolve({
                     kind: "config",
+                    file,
                     isValid: true,
                     config: parseResult.config,
                   });
