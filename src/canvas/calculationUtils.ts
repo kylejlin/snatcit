@@ -3,7 +3,7 @@ import { roundUpToPowerOf2 } from "../misc";
 
 export interface SpectrumFftData {
   readonly fftInputLength: number;
-  readonly fftBinsPerSpectrumBin: number;
+  readonly fractionalFftBinsPerSpectrumBin: number;
   readonly spectrumBins: number;
 }
 
@@ -24,9 +24,8 @@ export function getSpectrumFftData({
   /** We can't use the window size as-is, because FFT requires a power of 2. */
   const fftInputLength = roundUpToPowerOf2(windowSizeInFractionalFrames);
   const hzPerFftBin = audioBuffer.sampleRate / fftInputLength;
-  const fftBinsPerSpectrumBin = Math.floor(
-    snatcitConfig.spectrogram.idealBinSizeInHz / hzPerFftBin
-  );
+  const fractionalFftBinsPerSpectrumBin =
+    snatcitConfig.spectrogram.idealBinSizeInHz / hzPerFftBin;
   const maxFrequencyInHz = Math.min(
     audioBuffer.sampleRate,
     snatcitConfig.spectrogram.idealMaxFrequencyInHz
@@ -35,8 +34,8 @@ export function getSpectrumFftData({
     fftInputLength,
     Math.floor(maxFrequencyInHz / hzPerFftBin)
   );
-  const spectrumBins = Math.floor(maxFftBins / fftBinsPerSpectrumBin);
-  return { fftInputLength, fftBinsPerSpectrumBin, spectrumBins };
+  const spectrumBins = Math.floor(maxFftBins / fractionalFftBinsPerSpectrumBin);
+  return { fftInputLength, fractionalFftBinsPerSpectrumBin, spectrumBins };
 }
 
 export interface SpectrogramRenderData {

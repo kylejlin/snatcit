@@ -48,14 +48,18 @@ function renderSpectraIfPossible(renderConfig: RenderConfig): void {
     audioBuffer: renderConfig.audioBuffer,
     snatcitConfig: renderConfig.snatcitConfig,
   });
-  if (spectrumData.fftBinsPerSpectrumBin > 0) {
+  if (spectrumData.fractionalFftBinsPerSpectrumBin > 0) {
     renderSpectra(renderConfig, spectrumData);
   }
 }
 
 function renderSpectra(
   renderConfig: RenderConfig,
-  { fftInputLength, fftBinsPerSpectrumBin, spectrumBins }: SpectrumFftData
+  {
+    fftInputLength,
+    fractionalFftBinsPerSpectrumBin,
+    spectrumBins,
+  }: SpectrumFftData
 ): void {
   const { ctx, audioBuffer, snatcitConfig } = renderConfig;
   const imgDataData = new Uint8ClampedArray(4 * spectrumBins);
@@ -99,14 +103,19 @@ function renderSpectra(
     imgDataData.fill(0);
 
     for (let i = 0; i < spectrumBins; ++i) {
-      const currentFftBinStart = i * 2 * fftBinsPerSpectrumBin;
+      const binStart = 2 * Math.floor(i * fractionalFftBinsPerSpectrumBin);
+      const exclBinEnd = Math.min(
+        2 * Math.ceil((i + 1) * fractionalFftBinsPerSpectrumBin),
+        out.length
+      );
+      const fftBinsInSpectrumBin = (exclBinEnd - binStart) / 2 + 1;
       let totalMagnitude = 0;
-      for (let j = 0; j < 2 * fftBinsPerSpectrumBin; j += 2) {
-        const re = out[currentFftBinStart + j];
-        const im = out[currentFftBinStart + j + 1];
+      for (let reIndex = binStart; reIndex < exclBinEnd; reIndex += 2) {
+        const re = out[reIndex];
+        const im = out[reIndex + 1];
         totalMagnitude += Math.hypot(re, im);
       }
-      const averageMagnitude = totalMagnitude / fftBinsPerSpectrumBin;
+      const averageMagnitude = totalMagnitude / fftBinsInSpectrumBin;
       writeColor({
         out: imgDataData,
         unitMagnitude: Math.max(
