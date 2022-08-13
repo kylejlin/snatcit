@@ -133,10 +133,6 @@ export class App extends React.Component<AppProps, AppState> {
         <h2 className="FieldsTableLabel">Fields</h2>
         <table className="FieldsTable">
           <tbody>
-            <tr>
-              <th>Name</th>
-              <th>Value</th>
-            </tr>
             {allFieldNames.map((fieldName) => {
               const entry = computedValues.find(
                 (entry) => entry.fieldName === fieldName
