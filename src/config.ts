@@ -270,3 +270,36 @@ export function getAllFieldValuesForEntry(
 
   return { computedValues, namesOfDerivedFieldsThatCouldNotBeComputed };
 }
+
+export function updateConfig(
+  config: SnatcitConfig,
+  fileName: string,
+  providedFieldName: string,
+  value: number
+): SnatcitConfig {
+  const existingEntry = config.entries.find((entry) => entry.name === fileName);
+  const previousEffectiveEntry: Entry = existingEntry ?? {
+    name: fileName,
+    providedFieldValues: Object.fromEntries(
+      getAllFieldValuesForEntry(config, fileName)
+        .computedValues.filter((fieldEntry) => fieldEntry.wasProvided)
+        .map((fieldEntry) => [fieldEntry.fieldName, fieldEntry.value])
+    ),
+  };
+  const updatedEntry: Entry = {
+    ...previousEffectiveEntry,
+    providedFieldValues: {
+      ...previousEffectiveEntry.providedFieldValues,
+      [providedFieldName]: value,
+    },
+  };
+  return {
+    ...config,
+    entries:
+      existingEntry === undefined
+        ? config.entries.concat([updatedEntry])
+        : config.entries.map((entry) =>
+            entry.name === fileName ? updatedEntry : entry
+          ),
+  };
+}

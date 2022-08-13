@@ -1,7 +1,11 @@
 import React from "react";
 import { AppProps, AppState } from "./state";
 import { Header } from "./Header";
-import { getAllFieldValuesForEntry, LabeledFieldValue } from "./config";
+import {
+  getAllFieldValuesForEntry,
+  LabeledFieldValue,
+  updateConfig,
+} from "./config";
 import {
   RenderConfig,
   renderMarkings,
@@ -26,6 +30,9 @@ export class App extends React.Component<AppProps, AppState> {
     this.nextFileButtonOnClick = this.nextFileButtonOnClick.bind(this);
     this.downloadButtonOnClick = this.downloadButtonOnClick.bind(this);
     this.volumeSliderOnChange = this.volumeSliderOnChange.bind(this);
+    this.fieldValueInputOnFocus = this.fieldValueInputOnFocus.bind(this);
+    this.fieldValueInputOnBlur = this.fieldValueInputOnBlur.bind(this);
+    this.fieldValueInputOnChange = this.fieldValueInputOnChange.bind(this);
     this.windowOnResize = this.windowOnResize.bind(this);
     this.requestCanvasUpdate = this.requestCanvasUpdate.bind(this);
     this.updateCanvas = this.updateCanvas.bind(this);
@@ -35,8 +42,10 @@ export class App extends React.Component<AppProps, AppState> {
     this.state = {
       volume: 1,
       isPlaying: false,
-      selectedIndex: 0,
+      selectedEntryIndex: 0,
       config: this.props.initialConfig,
+      selectedProvidedFieldName: undefined,
+      tentativeFieldValue: "",
     };
 
     this.spectrogramRef = React.createRef();
@@ -67,13 +76,14 @@ export class App extends React.Component<AppProps, AppState> {
 
   override render(): React.ReactElement {
     const fileNames = this.props.audioFiles.map((f) => f.name);
-    const { selectedIndex, isPlaying, config } = this.state;
-    const allFieldNames = config.providedFieldNames.concat(
+    const { selectedEntryIndex: selectedIndex, isPlaying, config } = this.state;
+    const { providedFieldNames } = config;
+    const allFieldNames = providedFieldNames.concat(
       config.derivedFields.map((f) => f.name)
     );
     const { computedValues } = getAllFieldValuesForEntry(
       this.state.config,
-      this.props.audioFiles[this.state.selectedIndex].name
+      this.props.audioFiles[this.state.selectedEntryIndex].name
     );
     return (
       <div className="App">
@@ -133,7 +143,25 @@ export class App extends React.Component<AppProps, AppState> {
               return (
                 <tr key={fieldName}>
                   <td>{fieldName}</td>
-                  <td>{entry === undefined ? "Error" : entry.value}</td>
+                  <td>
+                    {entry === undefined ? (
+                      "Error"
+                    ) : providedFieldNames.includes(fieldName) ? (
+                      <input
+                        data-field-name={fieldName}
+                        value={
+                          fieldName === this.state.selectedProvidedFieldName
+                            ? this.state.tentativeFieldValue
+                            : entry.value
+                        }
+                        onFocus={this.fieldValueInputOnFocus}
+                        onBlur={this.fieldValueInputOnBlur}
+                        onChange={this.fieldValueInputOnChange}
+                      />
+                    ) : (
+                      entry.value
+                    )}
+                  </td>
                 </tr>
               );
             })}
@@ -147,10 +175,10 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   previousFileButtonOnClick(): void {
-    const previousIndex = Math.max(0, this.state.selectedIndex - 1);
+    const previousIndex = Math.max(0, this.state.selectedEntryIndex - 1);
     this.setState(
       {
-        selectedIndex: previousIndex,
+        selectedEntryIndex: previousIndex,
       },
       this.requestCanvasUpdate
     );
@@ -159,11 +187,11 @@ export class App extends React.Component<AppProps, AppState> {
   nextFileButtonOnClick(): void {
     const nextIndex = Math.min(
       this.props.audioFiles.length - 1,
-      this.state.selectedIndex + 1
+      this.state.selectedEntryIndex + 1
     );
     this.setState(
       {
-        selectedIndex: nextIndex,
+        selectedEntryIndex: nextIndex,
       },
       this.requestCanvasUpdate
     );
@@ -183,6 +211,97 @@ export class App extends React.Component<AppProps, AppState> {
     // TODO
     // audioElement.volume = clampedVolume;
     this.setState({ volume: clampedVolume });
+  }
+
+  fieldValueInputOnFocus(event: React.FocusEvent<HTMLInputElement>): void {
+    const fieldName = event.target.getAttribute("data-field-name");
+    if (fieldName === null) {
+      throw new Error(
+        "fieldValueInputOnFocus was called with an event with an input element without a data-field-name attribute."
+      );
+    }
+    if (!this.state.config.providedFieldNames.includes(fieldName)) {
+      throw new Error(
+        "The selected field name was not in the provided field names"
+      );
+    }
+    const { computedValues } = getAllFieldValuesForEntry(
+      this.state.config,
+      this.props.audioFiles[this.state.selectedEntryIndex].name
+    );
+    const fieldEntry = computedValues.find(
+      (entry) => entry.fieldName === fieldName
+    );
+    if (fieldEntry === undefined) {
+      throw new Error("A provided field was uncomputable.");
+    }
+
+    this.setState({
+      selectedProvidedFieldName: fieldName,
+      tentativeFieldValue: String(fieldEntry.value),
+    });
+  }
+
+  fieldValueInputOnBlur(event: React.FocusEvent<HTMLInputElement>): void {
+    const fieldName = event.target.getAttribute("data-field-name");
+    if (fieldName === null) {
+      throw new Error(
+        "fieldValueInputOnBlur was called with an event with an input element without a data-field-name attribute."
+      );
+    }
+    if (!this.state.config.providedFieldNames.includes(fieldName)) {
+      throw new Error(
+        "The selected field name was not in the provided field names"
+      );
+    }
+    // TODO
+  }
+
+  fieldValueInputOnChange(event: React.ChangeEvent<HTMLInputElement>): void {
+    const fieldName = event.target.getAttribute("data-field-name");
+    if (fieldName === null) {
+      throw new Error(
+        "fieldValueInputOnChange was called with an event with an input element without a data-field-name attribute."
+      );
+    }
+    if (!this.state.config.providedFieldNames.includes(fieldName)) {
+      throw new Error(
+        "The selected field name was not in the provided field names"
+      );
+    }
+    const canvas = this.spectrogramRef.current;
+    if (canvas === null) {
+      return;
+    }
+
+    const newTentativeFieldValue = event.target.value;
+    const editedEntryIndex = this.state.selectedEntryIndex;
+    this.getAudioData(editedEntryIndex, canvas.width).then((audioData) => {
+      const durationInMs = audioData.audioBuffer.duration * 1e3;
+      const parsedValue = Number(newTentativeFieldValue);
+      const isParsedValueValid =
+        Number.isFinite(parsedValue) &&
+        0 <= parsedValue &&
+        parsedValue <= durationInMs;
+      this.setState((prevState) => {
+        if (prevState.selectedEntryIndex !== editedEntryIndex) {
+          return prevState;
+        } else {
+          return {
+            ...prevState,
+            tentativeFieldValue: newTentativeFieldValue,
+            config: isParsedValueValid
+              ? updateConfig(
+                  prevState.config,
+                  this.props.audioFiles[editedEntryIndex].name,
+                  fieldName,
+                  parsedValue
+                )
+              : prevState.config,
+          };
+        }
+      });
+    });
   }
 
   windowOnResize(): void {
@@ -316,12 +435,12 @@ export class App extends React.Component<AppProps, AppState> {
 
     const { computedValues } = getAllFieldValuesForEntry(
       this.state.config,
-      this.props.audioFiles[this.state.selectedIndex].name
+      this.props.audioFiles[this.state.selectedEntryIndex].name
     );
-    return this.getAudioData(this.state.selectedIndex, canvas.width).then(
+    return this.getAudioData(this.state.selectedEntryIndex, canvas.width).then(
       (audioData) => {
         const renderConfig: RenderConfig = {
-          fileIndex: this.state.selectedIndex,
+          fileIndex: this.state.selectedEntryIndex,
           ctx,
           audioCtx: this.audioCtx,
           audioBuffer: audioData.audioBuffer,
