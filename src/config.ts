@@ -242,11 +242,15 @@ export function getAllFieldValuesForEntry(
   for (let i = 0; i < config.derivedFields.length; ++i) {
     const { name, cmamekSrc } = config.derivedFields[i];
     const context = Object.fromEntries(
-      computedValues.map((v) => [v.fieldName, v.value])
+      computedValues
+        .map((v) => [v.fieldName, v.value])
+        .concat(
+          namesOfDerivedFieldsThatCouldNotBeComputed.map((name) => [name, NaN])
+        )
     );
     const evalRes = evalCmamekExpression(cmamekSrc, context);
 
-    if (evalRes.succeeded) {
+    if (evalRes.succeeded && Number.isFinite(evalRes.value)) {
       computedValues.push({
         fieldName: name,
         value: evalRes.value,
