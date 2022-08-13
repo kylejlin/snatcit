@@ -59,31 +59,46 @@ function renderSpectra(
   const colorMap = getColorMap(snatcitConfig.spectrogram.colorScale);
 
   const songLengthInMs = (audioBuffer.length / audioBuffer.sampleRate) * 1e3;
-  const numberOfFullSpectra =
+  const idealNumberOfFractionalSpectra =
     1 +
-    Math.floor(
-      (songLengthInMs - snatcitConfig.spectrogram.idealWindowSizeInMs) /
-        snatcitConfig.spectrogram.idealStepSizeInMs
-    );
-  const spectrumCanvasWidth = Math.floor(canvasWidth / numberOfFullSpectra);
+    (songLengthInMs - snatcitConfig.spectrogram.idealWindowSizeInMs) /
+      snatcitConfig.spectrogram.idealStepSizeInMs;
+  const numberOfFractionalSpectra = Math.min(
+    idealNumberOfFractionalSpectra,
+    canvasWidth
+  );
+  const spectrumCanvasFractionalWidth =
+    canvasWidth / Math.ceil(numberOfFractionalSpectra);
+  const spectrumCanvasCeiledWidth = Math.ceil(spectrumCanvasFractionalWidth);
 
-  const windowSizeInFrames = Math.floor(
+  const windowSizeInFractionalFrames =
     snatcitConfig.spectrogram.idealWindowSizeInMs *
-      1e-3 *
-      audioBuffer.sampleRate
+    1e-3 *
+    audioBuffer.sampleRate;
+  const idealStepSizeInFractionalFrames =
+    snatcitConfig.spectrogram.idealStepSizeInMs * 1e-3 * audioBuffer.sampleRate;
+  const minStepSizeInFractionalFrames =
+    (audioBuffer.length - windowSizeInFractionalFrames) /
+    (numberOfFractionalSpectra - 1);
+  const stepSizeInFractionalFrames = Math.max(
+    idealStepSizeInFractionalFrames,
+    minStepSizeInFractionalFrames
   );
-  const stepSizeInFrames = Math.floor(
-    snatcitConfig.spectrogram.idealStepSizeInMs * 1e-3 * audioBuffer.sampleRate
-  );
+  const numberOfFullSpectra = Math.floor(numberOfFractionalSpectra);
 
   for (let i = 0; i < numberOfFullSpectra; ++i) {
-    const windowStartInFrames = i * stepSizeInFrames;
-    const windowCanvasLeft = i * spectrumCanvasWidth;
+    const windowStartInFractionalFrames = i * stepSizeInFractionalFrames;
 
     const slice = lazySliceAudioBuffer(
       audioBuffer,
-      windowStartInFrames,
-      Math.min(windowStartInFrames + windowSizeInFrames, audioBuffer.length)
+      Math.floor(windowStartInFractionalFrames),
+      Math.min(
+        Math.floor(
+          windowStartInFractionalFrames + windowSizeInFractionalFrames
+        ),
+        audioBuffer.length,
+        Math.floor(windowStartInFractionalFrames) + fftInputLength
+      )
     );
     const input = new Float32Array(fftInputLength);
     copyChannelAverageInto(slice, input);
@@ -115,7 +130,8 @@ function renderSpectra(
       });
     }
 
-    for (let i = 0; i < spectrumCanvasWidth; ++i) {
+    const windowCanvasLeft = Math.floor(i * spectrumCanvasFractionalWidth);
+    for (let i = 0; i < spectrumCanvasCeiledWidth; ++i) {
       ctx.putImageData(imgData, windowCanvasLeft + i, 0);
     }
   }
