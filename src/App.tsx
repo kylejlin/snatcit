@@ -7,7 +7,7 @@ import {
   renderMarkings,
   renderSpectrogram,
 } from "./canvas/renderSpectrogramAndMarkings";
-import { getSpectrumData, SpectrumData } from "./canvas/calculationUtils";
+import { getSpectrumFftData, SpectrumFftData } from "./canvas/calculationUtils";
 
 export class App extends React.Component<AppProps, AppState> {
   private spectrogramRef: React.RefObject<HTMLCanvasElement>;
@@ -205,14 +205,14 @@ export class App extends React.Component<AppProps, AppState> {
       fr.addEventListener("load", () => {
         const audioData = fr.result as ArrayBuffer;
         this.audioCtx.decodeAudioData(audioData, (audioBuffer) => {
-          const spectrumData = getSpectrumData({
+          const spectrumData = getSpectrumFftData({
             audioBuffer,
             snatcitConfig: this.state.config,
           });
 
           const data: AudioData = {
             audioBuffer,
-            spectrumData,
+            spectrumFftData: spectrumData,
           };
           this.audioDataCache[index] = data;
           resolve(data);
@@ -228,29 +228,31 @@ export class App extends React.Component<AppProps, AppState> {
       return Promise.resolve(cachedData);
     }
 
-    return this.getAudioData(index).then(({ audioBuffer, spectrumData }) => {
-      const { internalCanvasCtx } = this;
-      const canvasWidth = window.innerWidth;
-      const canvasHeight = spectrumData.spectrumBins;
-      internalCanvasCtx.canvas.width = canvasWidth;
-      internalCanvasCtx.canvas.height = canvasHeight;
-      renderSpectrogram({
-        fileIndex: index,
-        ctx: internalCanvasCtx,
-        audioCtx: this.audioCtx,
-        audioBuffer,
-        snatcitConfig: this.state.config,
-      });
+    return this.getAudioData(index).then(
+      ({ audioBuffer, spectrumFftData: spectrumData }) => {
+        const { internalCanvasCtx } = this;
+        const canvasWidth = window.innerWidth;
+        const canvasHeight = spectrumData.spectrumBins;
+        internalCanvasCtx.canvas.width = canvasWidth;
+        internalCanvasCtx.canvas.height = canvasHeight;
+        renderSpectrogram({
+          fileIndex: index,
+          ctx: internalCanvasCtx,
+          audioCtx: this.audioCtx,
+          audioBuffer,
+          snatcitConfig: this.state.config,
+        });
 
-      const imgData = internalCanvasCtx.getImageData(
-        0,
-        0,
-        canvasWidth,
-        canvasHeight
-      );
-      this.spectrogramImageDataCache[index] = imgData;
-      return imgData;
-    });
+        const imgData = internalCanvasCtx.getImageData(
+          0,
+          0,
+          canvasWidth,
+          canvasHeight
+        );
+        this.spectrogramImageDataCache[index] = imgData;
+        return imgData;
+      }
+    );
   }
 
   resizeAndRerenderCanvas(): void {
@@ -304,5 +306,5 @@ export class App extends React.Component<AppProps, AppState> {
 
 export interface AudioData {
   readonly audioBuffer: AudioBuffer;
-  readonly spectrumData: SpectrumData;
+  readonly spectrumFftData: SpectrumFftData;
 }

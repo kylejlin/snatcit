@@ -2,8 +2,8 @@ import { LabeledFieldValue, SnatcitConfig } from "../config";
 import Fft from "fft.js";
 import {
   rgbTupleToCssFillStyle,
-  getSpectrumData,
-  SpectrumData,
+  getSpectrumFftData,
+  SpectrumFftData,
   getColorMap,
   lazySliceAudioBuffer,
   copyChannelAverageInto,
@@ -42,7 +42,7 @@ function renderBackground(renderConfig: RenderConfig): void {
 }
 
 function renderSpectraIfPossible(renderConfig: RenderConfig): void {
-  const spectrumData = getSpectrumData(renderConfig);
+  const spectrumData = getSpectrumFftData(renderConfig);
   if (spectrumData.fftBinsPerSpectrumBin > 0) {
     renderSpectra(renderConfig, spectrumData);
   }
@@ -50,41 +50,20 @@ function renderSpectraIfPossible(renderConfig: RenderConfig): void {
 
 function renderSpectra(
   renderConfig: RenderConfig,
-  { fftInputLength, fftBinsPerSpectrumBin, spectrumBins }: SpectrumData
+  { fftInputLength, fftBinsPerSpectrumBin, spectrumBins }: SpectrumFftData
 ): void {
   const { ctx, audioBuffer, snatcitConfig } = renderConfig;
-  const { width: canvasWidth } = ctx.canvas;
   const imgDataData = new Uint8ClampedArray(4 * spectrumBins);
   const imgData = new ImageData(imgDataData, 1, spectrumBins);
   const colorMap = getColorMap(snatcitConfig.spectrogram.colorScale);
 
-  const songLengthInMs = (audioBuffer.length / audioBuffer.sampleRate) * 1e3;
-  const idealNumberOfFractionalSpectra =
-    1 +
-    (songLengthInMs - snatcitConfig.spectrogram.idealWindowSizeInMs) /
-      snatcitConfig.spectrogram.idealStepSizeInMs;
-  const numberOfFractionalSpectra = Math.min(
-    idealNumberOfFractionalSpectra,
-    canvasWidth
-  );
-  const spectrumCanvasFractionalWidth =
-    canvasWidth / Math.ceil(numberOfFractionalSpectra);
-  const spectrumCanvasCeiledWidth = Math.ceil(spectrumCanvasFractionalWidth);
-
-  const windowSizeInFractionalFrames =
-    snatcitConfig.spectrogram.idealWindowSizeInMs *
-    1e-3 *
-    audioBuffer.sampleRate;
-  const idealStepSizeInFractionalFrames =
-    snatcitConfig.spectrogram.idealStepSizeInMs * 1e-3 * audioBuffer.sampleRate;
-  const minStepSizeInFractionalFrames =
-    (audioBuffer.length - windowSizeInFractionalFrames) /
-    (numberOfFractionalSpectra - 1);
-  const stepSizeInFractionalFrames = Math.max(
-    idealStepSizeInFractionalFrames,
-    minStepSizeInFractionalFrames
-  );
-  const numberOfFullSpectra = Math.floor(numberOfFractionalSpectra);
+  const {
+    numberOfFullSpectra,
+    stepSizeInFractionalFrames,
+    windowSizeInFractionalFrames,
+    spectrumCanvasFractionalWidth,
+    spectrumCanvasCeiledWidth,
+  } = getSpectrogramRenderData(renderConfig);
 
   for (let i = 0; i < numberOfFullSpectra; ++i) {
     const windowStartInFractionalFrames = i * stepSizeInFractionalFrames;
@@ -135,6 +114,57 @@ function renderSpectra(
       ctx.putImageData(imgData, windowCanvasLeft + i, 0);
     }
   }
+}
+
+interface SpectrogramRenderData {
+  readonly numberOfFullSpectra: number;
+  readonly stepSizeInFractionalFrames: number;
+  readonly windowSizeInFractionalFrames: number;
+  readonly spectrumCanvasFractionalWidth: number;
+  readonly spectrumCanvasCeiledWidth: number;
+}
+
+function getSpectrogramRenderData(
+  renderConfig: RenderConfig
+): SpectrogramRenderData {
+  const { ctx, audioBuffer, snatcitConfig } = renderConfig;
+  const { width: canvasWidth } = ctx.canvas;
+
+  const songLengthInMs = (audioBuffer.length / audioBuffer.sampleRate) * 1e3;
+  const idealNumberOfFractionalSpectra =
+    1 +
+    (songLengthInMs - snatcitConfig.spectrogram.idealWindowSizeInMs) /
+      snatcitConfig.spectrogram.idealStepSizeInMs;
+  const numberOfFractionalSpectra = Math.min(
+    idealNumberOfFractionalSpectra,
+    canvasWidth
+  );
+  const spectrumCanvasFractionalWidth =
+    canvasWidth / Math.ceil(numberOfFractionalSpectra);
+  const spectrumCanvasCeiledWidth = Math.ceil(spectrumCanvasFractionalWidth);
+
+  const windowSizeInFractionalFrames =
+    snatcitConfig.spectrogram.idealWindowSizeInMs *
+    1e-3 *
+    audioBuffer.sampleRate;
+  const idealStepSizeInFractionalFrames =
+    snatcitConfig.spectrogram.idealStepSizeInMs * 1e-3 * audioBuffer.sampleRate;
+  const minStepSizeInFractionalFrames =
+    (audioBuffer.length - windowSizeInFractionalFrames) /
+    (numberOfFractionalSpectra - 1);
+  const stepSizeInFractionalFrames = Math.max(
+    idealStepSizeInFractionalFrames,
+    minStepSizeInFractionalFrames
+  );
+  const numberOfFullSpectra = Math.floor(numberOfFractionalSpectra);
+
+  return {
+    numberOfFullSpectra,
+    stepSizeInFractionalFrames,
+    windowSizeInFractionalFrames,
+    spectrumCanvasFractionalWidth,
+    spectrumCanvasCeiledWidth,
+  };
 }
 
 export function renderMarkings(

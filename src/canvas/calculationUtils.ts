@@ -1,19 +1,19 @@
 import { SnatcitConfig } from "../config";
 import { roundUpToPowerOf2 } from "../misc";
 
-export interface SpectrumData {
+export interface SpectrumFftData {
   readonly fftInputLength: number;
   readonly fftBinsPerSpectrumBin: number;
   readonly spectrumBins: number;
 }
 
-export function getSpectrumData({
+export function getSpectrumFftData({
   audioBuffer,
   snatcitConfig,
 }: {
   readonly audioBuffer: AudioBuffer;
   readonly snatcitConfig: SnatcitConfig;
-}): SpectrumData {
+}): SpectrumFftData {
   const windowSizeInFrames = Math.floor(
     snatcitConfig.spectrogram.idealWindowSizeInMs *
       1e-3 *
