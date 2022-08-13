@@ -61,7 +61,7 @@ export class App extends React.Component<AppProps, AppState> {
         </p>
 
         <div className="BgmVolumeInputContainer">
-          <label>Background music volume: </label>
+          <label>Volume: </label>
           <input
             type="range"
             min={0}
