@@ -1,3 +1,4 @@
+import { RgbTuple } from "./canvas/calculationUtils";
 import { evalCmamekExpression } from "./lib/cmamek";
 import { hasDuplicate } from "./misc";
 
@@ -7,6 +8,7 @@ const SNATCIT_CONFIG_JSON_KEYS = {
   providedFieldNames: "provided_field_names",
   derivedFields: "derived_fields",
   defaultValues: "default_values",
+  fieldColors: "field_colors",
   entries: "entries",
 
   spectrogramKeys: {
@@ -43,6 +45,7 @@ export interface SnatcitConfig {
   readonly providedFieldNames: string[];
   readonly derivedFields: DerivedField[];
   readonly defaultValues: { [fieldName: string]: undefined | number };
+  readonly fieldColors: { [fieldName: string]: undefined | RgbTuple };
   readonly entries: readonly Entry[];
 }
 
@@ -117,12 +120,17 @@ export function parseConfig(
       })
     );
     const defaultValues = json[SNATCIT_CONFIG_JSON_KEYS.defaultValues];
+    const fieldColors = json[SNATCIT_CONFIG_JSON_KEYS.fieldColors];
     const entries = json[SNATCIT_CONFIG_JSON_KEYS.entries].map(
       (rawEntry: any) => ({
         name: rawEntry[SNATCIT_CONFIG_JSON_KEYS.entryKeys.name],
         providedFieldValues:
           rawEntry[SNATCIT_CONFIG_JSON_KEYS.entryKeys.providedFieldValues],
       })
+    );
+
+    const allFieldNames = providedFieldNames.concat(
+      derivedFields.map((f: { name: string }) => f.name)
     );
 
     if (
@@ -146,14 +154,12 @@ export function parseConfig(
           typeof derivedField.name === "string" &&
           typeof derivedField.cmamekSrc === "string"
       ) &&
-      !hasDuplicate<string>(
-        providedFieldNames.concat(
-          derivedFields.map((f: { name: string }) => f.name)
-        ),
-        (a, b) => a === b
-      ) &&
+      !hasDuplicate<string>(allFieldNames, (a, b) => a === b) &&
       providedFieldNames.every(
         (fieldName) => typeof defaultValues[fieldName] === "number"
+      ) &&
+      allFieldNames.every((fieldName: string) =>
+        isValidRgbTuple(fieldColors[fieldName])
       ) &&
       entries.every(
         (entry: any) =>
@@ -171,6 +177,7 @@ export function parseConfig(
           providedFieldNames,
           derivedFields,
           defaultValues,
+          fieldColors,
           entries,
         },
       };
