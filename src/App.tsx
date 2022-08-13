@@ -45,6 +45,7 @@ export class App extends React.Component<AppProps, AppState> {
       selectedEntryIndex: 0,
       config: this.props.initialConfig,
       selectedProvidedFieldName: undefined,
+      isFieldInputFocused: false,
       tentativeFieldValue: "",
     };
 
@@ -150,7 +151,8 @@ export class App extends React.Component<AppProps, AppState> {
                       <input
                         data-field-name={fieldName}
                         value={
-                          fieldName === this.state.selectedProvidedFieldName
+                          fieldName === this.state.selectedProvidedFieldName &&
+                          this.state.isFieldInputFocused
                             ? this.state.tentativeFieldValue
                             : entry.value
                         }
@@ -238,23 +240,15 @@ export class App extends React.Component<AppProps, AppState> {
 
     this.setState({
       selectedProvidedFieldName: fieldName,
+      isFieldInputFocused: true,
       tentativeFieldValue: String(fieldEntry.value),
     });
   }
 
-  fieldValueInputOnBlur(event: React.FocusEvent<HTMLInputElement>): void {
-    const fieldName = event.target.getAttribute("data-field-name");
-    if (fieldName === null) {
-      throw new Error(
-        "fieldValueInputOnBlur was called with an event with an input element without a data-field-name attribute."
-      );
-    }
-    if (!this.state.config.providedFieldNames.includes(fieldName)) {
-      throw new Error(
-        "The selected field name was not in the provided field names"
-      );
-    }
-    // TODO
+  fieldValueInputOnBlur(): void {
+    this.setState({
+      isFieldInputFocused: false,
+    });
   }
 
   fieldValueInputOnChange(event: React.ChangeEvent<HTMLInputElement>): void {
