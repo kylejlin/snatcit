@@ -139,34 +139,34 @@ export function parseConfig(
       typeof spectrogram.idealMaxFrequencyInHz === "number" &&
       typeof spectrogram.idealWindowSizeInMs === "number" &&
       typeof spectrogram.idealStepSizeInMs === "number" &&
-      spectrogram.colorScale.every(
+      (spectrogram.colorScale.every(
         (colorScalePoint: any) =>
           Array.isArray(colorScalePoint) &&
           colorScalePoint.length === 2 &&
           typeof colorScalePoint[0] === "number" &&
           isValidRgbTuple(colorScalePoint[1])
-      ) &&
+      ) as boolean) &&
       isValidRgbTuple(spectrogram.backgroundColor) &&
       Array.isArray(providedFieldNames) &&
       providedFieldNames.every((fieldName) => typeof fieldName === "string") &&
-      derivedFields.every(
+      (derivedFields.every(
         (derivedField: any) =>
           typeof derivedField.name === "string" &&
           typeof derivedField.cmamekSrc === "string"
-      ) &&
+      ) as boolean) &&
       !hasDuplicate<string>(allFieldNames, (a, b) => a === b) &&
       providedFieldNames.every(
         (fieldName) => typeof defaultValues[fieldName] === "number"
       ) &&
-      allFieldNames.every((fieldName: string) =>
+      (allFieldNames.every((fieldName: string) =>
         isValidRgbTuple(fieldColors[fieldName])
-      ) &&
-      entries.every(
+      ) as boolean) &&
+      (entries.every(
         (entry: any) =>
           typeof entry.name === "string" &&
           typeof entry.providedFieldValues === "object" &&
           entry.providedFieldValues !== null
-      ) &&
+      ) as boolean) &&
       !hasDuplicate<{ name: string }>(entries, (a, b) => a.name === b.name)
     ) {
       return {

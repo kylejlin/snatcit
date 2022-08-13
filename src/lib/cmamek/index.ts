@@ -74,14 +74,16 @@ const OPS: readonly Operator[] = [
     eval: (args) =>
       args.some((a) => Number.isNaN(a))
         ? NaN
-        : args.reduce((a, b) => a && b, 1),
+        : // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          args.reduce((a, b) => a && b, 1),
   },
   {
     symbol: "$or",
     eval: (args) =>
       args.some((a) => Number.isNaN(a))
         ? NaN
-        : args.reduce((a, b) => a || b, 0),
+        : // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          args.reduce((a, b) => a || b, 0),
   },
   {
     symbol: "$not",
@@ -89,7 +91,8 @@ const OPS: readonly Operator[] = [
       args.length === 1
         ? Number.isNaN(args[0])
           ? NaN
-          : !args[0]
+          : // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          !args[0]
           ? 1
           : 0
         : undefined,

@@ -72,8 +72,9 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
   renderPrelaunchMenu(state: PrelaunchState): React.ReactElement {
     const githubUsername = getGithubUsernameOfHost();
     const helpHref: undefined | string =
-      githubUsername &&
-      `https://github.com/${githubUsername}/snatcit/tree/main/docs/user_guide.md`;
+      githubUsername === undefined
+        ? undefined
+        : `https://github.com/${githubUsername}/snatcit/tree/main/docs/user_guide.md`;
 
     const validConfigFileInfo = state.fileInfo.filter(
       (info) => info.kind === "config" && info.isValid
@@ -92,7 +93,7 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
 
         <p>Welcome to Snatcit!</p>
 
-        {helpHref && (
+        {helpHref !== undefined && (
           <p>
             If you are a new user, click <a href={helpHref}>here</a> for help.
           </p>
@@ -338,7 +339,7 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
   }
 }
 
-interface WrapperProps {}
+type WrapperProps = Record<string, unknown>;
 
 function canLaunch(fileInfo: readonly FileInfo[]): boolean {
   return getConfigAndAudioFileFromFileInfoArray(fileInfo) !== undefined;
