@@ -39,7 +39,8 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
     this.deleteFileInfo = this.deleteFileInfo.bind(this);
     this.launchButtonOnClick = this.launchButtonOnClick.bind(this);
   }
-  render(): React.ReactElement {
+
+  override render(): React.ReactElement {
     const legalMimeType: undefined | BrowserAudioMimeType =
       ALL_BROWSER_AUDIO_MIME_TYPES.find((mimeType) =>
         MediaRecorder.isTypeSupported(mimeType)

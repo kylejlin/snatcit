@@ -52,20 +52,20 @@ export class App extends React.Component<AppProps, AppState> {
     this.spectrogramImageDataCache = {};
   }
 
-  componentDidMount(): void {
+  override componentDidMount(): void {
     this.requestCanvasUpdate();
     window.addEventListener("resize", this.windowOnResize);
   }
 
-  componentDidUpdate(): void {
+  override componentDidUpdate(): void {
     this.requestCanvasUpdate();
   }
 
-  componentWillUnmount(): void {
+  override componentWillUnmount(): void {
     window.removeEventListener("resize", this.windowOnResize);
   }
 
-  render(): React.ReactElement {
+  override render(): React.ReactElement {
     const fileNames = this.props.audioFiles.map((f) => f.name);
     const { selectedIndex, isPlaying, config } = this.state;
     const allFieldNames = config.providedFieldNames.concat(
