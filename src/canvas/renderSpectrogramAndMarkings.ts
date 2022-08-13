@@ -62,16 +62,18 @@ function renderSpectra(
   const numberOfFullSpectra =
     1 +
     Math.floor(
-      (songLengthInMs - snatcitConfig.spectrogram.windowSizeInMs) /
-        snatcitConfig.spectrogram.stepSizeInMs
+      (songLengthInMs - snatcitConfig.spectrogram.idealWindowSizeInMs) /
+        snatcitConfig.spectrogram.idealStepSizeInMs
     );
   const spectrumCanvasWidth = Math.floor(canvasWidth / numberOfFullSpectra);
 
   const windowSizeInFrames = Math.floor(
-    snatcitConfig.spectrogram.windowSizeInMs * 1e-3 * audioBuffer.sampleRate
+    snatcitConfig.spectrogram.idealWindowSizeInMs *
+      1e-3 *
+      audioBuffer.sampleRate
   );
   const stepSizeInFrames = Math.floor(
-    snatcitConfig.spectrogram.stepSizeInMs * 1e-3 * audioBuffer.sampleRate
+    snatcitConfig.spectrogram.idealStepSizeInMs * 1e-3 * audioBuffer.sampleRate
   );
 
   for (let i = 0; i < numberOfFullSpectra; ++i) {

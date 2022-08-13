@@ -15,7 +15,9 @@ export function getSpectrumData({
   readonly snatcitConfig: SnatcitConfig;
 }): SpectrumData {
   const windowSizeInFrames = Math.floor(
-    snatcitConfig.spectrogram.windowSizeInMs * 1e-3 * audioBuffer.sampleRate
+    snatcitConfig.spectrogram.idealWindowSizeInMs *
+      1e-3 *
+      audioBuffer.sampleRate
   );
   /** We can't use the window size as-is, because FFT requires a power of 2. */
   const fftInputLength = roundUpToPowerOf2(windowSizeInFrames);

@@ -3,8 +3,8 @@
   "spectrogram": {
     "ideal_bin_size_in_hz": 50,
     "ideal_max_frequency_in_hz": 8000,
-    "window_size_in_ms": 25,
-    "step_size_in_ms": 10,
+    "ideal_window_size_in_ms": 25,
+    "ideal_step_size_in_ms": 10,
     "color_scale": [
       [0, [0, 0, 0]],
       [1, [255, 255, 255]]

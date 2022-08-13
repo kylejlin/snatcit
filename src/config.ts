@@ -12,8 +12,8 @@ const SNATCIT_CONFIG_JSON_KEYS = {
   spectrogramKeys: {
     idealBinSizeInHz: "ideal_bin_size_in_hz",
     idealMaxFrequencyInHz: "ideal_max_frequency_in_hz",
-    windowSizeInMs: "window_size_in_ms",
-    stepSizeInMs: "step_size_in_ms",
+    idealWindowSizeInMs: "ideal_window_size_in_ms",
+    idealStepSizeInMs: "ideal_step_size_in_ms",
     colorScale: "color_scale",
     backgroundColor: "background_color",
   },
@@ -32,8 +32,8 @@ export interface SnatcitConfig {
   readonly spectrogram: {
     readonly idealBinSizeInHz: number;
     readonly idealMaxFrequencyInHz: number;
-    readonly windowSizeInMs: number;
-    readonly stepSizeInMs: number;
+    readonly idealWindowSizeInMs: number;
+    readonly idealStepSizeInMs: number;
     readonly colorScale: readonly (readonly [
       number,
       readonly [number, number, number]
@@ -89,13 +89,13 @@ export function parseConfig(
         json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
           SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.idealMaxFrequencyInHz
         ],
-      windowSizeInMs:
+      idealWindowSizeInMs:
         json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
-          SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.windowSizeInMs
+          SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.idealWindowSizeInMs
         ],
-      stepSizeInMs:
+      idealStepSizeInMs:
         json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
-          SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.stepSizeInMs
+          SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.idealStepSizeInMs
         ],
       colorScale:
         json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
@@ -128,8 +128,8 @@ export function parseConfig(
       !Number.isNaN(creationDate.getTime()) &&
       typeof spectrogram.idealBinSizeInHz === "number" &&
       typeof spectrogram.idealMaxFrequencyInHz === "number" &&
-      typeof spectrogram.windowSizeInMs === "number" &&
-      typeof spectrogram.stepSizeInMs === "number" &&
+      typeof spectrogram.idealWindowSizeInMs === "number" &&
+      typeof spectrogram.idealStepSizeInMs === "number" &&
       spectrogram.colorScale.every(
         (colorScalePoint: any) =>
           Array.isArray(colorScalePoint) &&
