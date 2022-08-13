@@ -17,6 +17,8 @@ export class App extends React.Component<AppProps, AppState> {
   private audioDataCache: { [index: number]: undefined | AudioData };
   private spectrogramImageDataCache: { [index: number]: undefined | ImageData };
 
+  private renderPromise: undefined | Promise<null>;
+
   constructor(props: AppProps) {
     super(props);
 
@@ -25,6 +27,8 @@ export class App extends React.Component<AppProps, AppState> {
     this.downloadButtonOnClick = this.downloadButtonOnClick.bind(this);
     this.volumeSliderOnChange = this.volumeSliderOnChange.bind(this);
     this.windowOnResize = this.windowOnResize.bind(this);
+    this.requestCanvasUpdate = this.requestCanvasUpdate.bind(this);
+    this.updateCanvas = this.updateCanvas.bind(this);
     this.renderSpectrogramUsingCache =
       this.renderSpectrogramUsingCache.bind(this);
 
@@ -49,12 +53,12 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   componentDidMount(): void {
-    this.rerenderAndResizeCanvas();
+    this.requestCanvasUpdate();
     window.addEventListener("resize", this.windowOnResize);
   }
 
   componentDidUpdate(): void {
-    this.rerenderAndResizeCanvas();
+    this.requestCanvasUpdate();
   }
 
   componentWillUnmount(): void {
@@ -136,7 +140,7 @@ export class App extends React.Component<AppProps, AppState> {
       {
         selectedIndex: previousIndex,
       },
-      this.rerenderAndResizeCanvas
+      this.requestCanvasUpdate
     );
   }
 
@@ -149,7 +153,7 @@ export class App extends React.Component<AppProps, AppState> {
       {
         selectedIndex: nextIndex,
       },
-      this.rerenderAndResizeCanvas
+      this.requestCanvasUpdate
     );
   }
 
@@ -171,7 +175,7 @@ export class App extends React.Component<AppProps, AppState> {
 
   windowOnResize(): void {
     this.spectrogramImageDataCache = {};
-    this.rerenderAndResizeCanvas();
+    this.requestCanvasUpdate();
   }
 
   getAudioData(index: number, canvasWidth: number): Promise<AudioData> {
@@ -238,13 +242,23 @@ export class App extends React.Component<AppProps, AppState> {
     );
   }
 
-  rerenderAndResizeCanvas(): void {
+  requestCanvasUpdate(): void {
+    if (this.renderPromise === undefined) {
+      this.updateCanvas();
+    } else {
+      this.renderPromise.then(() => {
+        this.updateCanvas();
+      });
+    }
+  }
+
+  updateCanvas(): void {
     const canvas = this.spectrogramRef.current;
     if (canvas === null) {
       return;
     }
 
-    this.useSelectedAudioFileToRender([
+    this.renderPromise = this.useSelectedAudioFileToRender([
       this.renderSpectrogramUsingCache,
       renderMarkings,
     ]).then(() => {
@@ -255,6 +269,10 @@ export class App extends React.Component<AppProps, AppState> {
       canvas.style.height = availableHeight + "px";
 
       canvas.style.position = "absolute";
+
+      this.renderPromise = undefined;
+
+      return null;
     });
   }
 
@@ -274,15 +292,15 @@ export class App extends React.Component<AppProps, AppState> {
     });
   }
 
-  async useSelectedAudioFileToRender(
+  useSelectedAudioFileToRender(
     renderers: readonly ((
       rc: RenderConfig,
       computedValues: readonly LabeledFieldValue[]
     ) => void | Promise<void>)[]
-  ): Promise<void> {
+  ): Promise<null> {
     const canvas = this.spectrogramRef.current;
     if (canvas === null) {
-      return Promise.resolve();
+      return Promise.resolve(null);
     }
     const ctx = canvas.getContext("2d")!;
 
@@ -290,20 +308,30 @@ export class App extends React.Component<AppProps, AppState> {
       this.state.config,
       this.props.audioFiles[this.state.selectedIndex].name
     );
-    const audioData = await this.getAudioData(
-      this.state.selectedIndex,
-      canvas.width
+    return this.getAudioData(this.state.selectedIndex, canvas.width).then(
+      (audioData) => {
+        const renderConfig: RenderConfig = {
+          fileIndex: this.state.selectedIndex,
+          ctx,
+          audioCtx: this.audioCtx,
+          audioBuffer: audioData.audioBuffer,
+          snatcitConfig: this.state.config,
+        };
+        function f(i: number): Promise<null> {
+          return Promise.resolve(
+            renderers[i](renderConfig, computedValues)
+          ).then(() => {
+            const next = i + 1;
+            if (next < renderers.length) {
+              return f(next);
+            } else {
+              return Promise.resolve(null);
+            }
+          });
+        }
+        return f(0);
+      }
     );
-    const renderConfig: RenderConfig = {
-      fileIndex: this.state.selectedIndex,
-      ctx,
-      audioCtx: this.audioCtx,
-      audioBuffer: audioData.audioBuffer,
-      snatcitConfig: this.state.config,
-    };
-    for (let i = 0; i < renderers.length; ++i) {
-      await renderers[i](renderConfig, computedValues);
-    }
   }
 }
 

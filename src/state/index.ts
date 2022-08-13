@@ -11,6 +11,7 @@ export const ALL_BROWSER_AUDIO_MIME_TYPES = [
   "audio/webm",
   "audio/ogg",
   "audio/mp3",
+  "audio/mp4",
   "audio/x-matroska",
   "audio/wav",
   "audio/x-wav",
