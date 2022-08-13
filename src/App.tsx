@@ -13,7 +13,8 @@ export class App extends React.Component<AppProps, AppState> {
 
   private internalCanvasCtx: CanvasRenderingContext2D;
   private audioCtx: AudioContext;
-  private fileDataCache: { [index: number]: undefined | AudioFileData };
+  private audioDataCache: { [index: number]: undefined | AudioData };
+  private spectrogramImageDataCache: { [index: number]: undefined | ImageData };
 
   constructor(props: AppProps) {
     super(props);
@@ -42,7 +43,8 @@ export class App extends React.Component<AppProps, AppState> {
     this.internalCanvasCtx = internalCanvasCtx;
 
     this.audioCtx = new AudioContext();
-    this.fileDataCache = {};
+    this.audioDataCache = {};
+    this.spectrogramImageDataCache = {};
   }
 
   componentDidMount(): void {
@@ -173,13 +175,13 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   windowOnResize(): void {
-    this.fileDataCache = {};
+    this.spectrogramImageDataCache = {};
   }
 
-  getFileData(index: number): Promise<AudioFileData> {
-    const fileData = this.fileDataCache[index];
-    if (fileData !== undefined) {
-      return Promise.resolve(fileData);
+  getAudioData(index: number): Promise<AudioData> {
+    const cachedData = this.audioDataCache[index];
+    if (cachedData !== undefined) {
+      return Promise.resolve(cachedData);
     }
     return new Promise((resolve) => {
       const fr = new FileReader();
@@ -191,34 +193,45 @@ export class App extends React.Component<AppProps, AppState> {
             snatcitConfig: this.state.config,
           });
 
-          const { internalCanvasCtx } = this;
-          const canvasWidth = window.innerWidth;
-          const canvasHeight = spectrumData.spectrumBins;
-          internalCanvasCtx.canvas.width = canvasWidth;
-          internalCanvasCtx.canvas.height = canvasHeight;
-          renderSpectrogram({
-            ctx: internalCanvasCtx,
-            audioCtx: this.audioCtx,
-            audioBuffer,
-            snatcitConfig: this.state.config,
-          });
-
-          const data: AudioFileData = {
+          const data: AudioData = {
             audioBuffer,
             spectrumData,
-            spectrumImageData: internalCanvasCtx.getImageData(
-              0,
-              0,
-              canvasWidth,
-              canvasHeight
-            ),
           };
-
-          this.fileDataCache[index] = data;
+          this.audioDataCache[index] = data;
           resolve(data);
         });
       });
       fr.readAsArrayBuffer(this.props.audioFiles[index]);
+    });
+  }
+
+  getSpectrogramImageData(index: number): Promise<ImageData> {
+    const cachedData = this.spectrogramImageDataCache[index];
+    if (cachedData !== undefined) {
+      return Promise.resolve(cachedData);
+    }
+
+    return this.getAudioData(index).then(({ audioBuffer, spectrumData }) => {
+      const { internalCanvasCtx } = this;
+      const canvasWidth = window.innerWidth;
+      const canvasHeight = spectrumData.spectrumBins;
+      internalCanvasCtx.canvas.width = canvasWidth;
+      internalCanvasCtx.canvas.height = canvasHeight;
+      renderSpectrogram({
+        ctx: internalCanvasCtx,
+        audioCtx: this.audioCtx,
+        audioBuffer,
+        snatcitConfig: this.state.config,
+      });
+
+      const imgData = internalCanvasCtx.getImageData(
+        0,
+        0,
+        canvasWidth,
+        canvasHeight
+      );
+      this.spectrogramImageDataCache[index] = imgData;
+      return imgData;
     });
   }
 
@@ -248,12 +261,12 @@ export class App extends React.Component<AppProps, AppState> {
       this.state.config,
       this.props.audioFiles[this.state.selectedIndex].name
     );
-    this.getFileData(this.state.selectedIndex).then((fileData) => {
+    this.getAudioData(this.state.selectedIndex).then((audioData) => {
       renderSpectrogramAndMarkings(
         {
           ctx,
           audioCtx: this.audioCtx,
-          audioBuffer: fileData.audioBuffer,
+          audioBuffer: audioData.audioBuffer,
           snatcitConfig: this.state.config,
         },
         computedValues
@@ -262,8 +275,7 @@ export class App extends React.Component<AppProps, AppState> {
   }
 }
 
-export interface AudioFileData {
+export interface AudioData {
   readonly audioBuffer: AudioBuffer;
   readonly spectrumData: SpectrumData;
-  readonly spectrumImageData: ImageData;
 }
