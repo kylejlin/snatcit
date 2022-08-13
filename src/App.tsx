@@ -17,7 +17,7 @@ export class App extends React.Component<AppProps, AppState> {
   private audioDataCache: { [index: number]: undefined | AudioData };
   private spectrogramImageDataCache: { [index: number]: undefined | ImageData };
 
-  private renderPromise: undefined | Promise<undefined>;
+  private renderPromise: undefined | Promise<void>;
 
   constructor(props: AppProps) {
     super(props);
@@ -273,7 +273,7 @@ export class App extends React.Component<AppProps, AppState> {
     this.renderPromise = this.useSelectedAudioFileToRender([
       this.renderSpectrogramUsingCache,
       renderMarkings,
-    ]).then((): undefined => {
+    ]).then(() => {
       canvas.style.position = "static";
 
       const rect = canvas.getBoundingClientRect();
@@ -283,8 +283,6 @@ export class App extends React.Component<AppProps, AppState> {
       canvas.style.position = "absolute";
 
       this.renderPromise = undefined;
-
-      return;
     });
   }
 
@@ -309,7 +307,7 @@ export class App extends React.Component<AppProps, AppState> {
       rc: RenderConfig,
       computedValues: readonly LabeledFieldValue[]
     ) => void | Promise<void>)[]
-  ): Promise<undefined> {
+  ): Promise<void> {
     const canvas = this.spectrogramRef.current;
     if (canvas === null) {
       return Promise.resolve(undefined);
@@ -329,7 +327,7 @@ export class App extends React.Component<AppProps, AppState> {
           audioBuffer: audioData.audioBuffer,
           snatcitConfig: this.state.config,
         };
-        function f(i: number): Promise<undefined> {
+        function f(i: number): Promise<void> {
           return Promise.resolve(
             renderers[i](renderConfig, computedValues)
           ).then(() => {
