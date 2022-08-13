@@ -131,40 +131,38 @@ export class App extends React.Component<AppProps, AppState> {
         </button>
 
         <h2 className="FieldsTableLabel">Fields</h2>
-        <table className="FieldsTable">
-          <tbody>
-            {allFieldNames.map((fieldName) => {
-              const entry = computedValues.find(
-                (entry) => entry.fieldName === fieldName
-              );
-              return (
-                <tr key={fieldName}>
-                  <td>{fieldName}</td>
-                  <td>
-                    {entry === undefined ? (
-                      "Error"
-                    ) : providedFieldNames.includes(fieldName) ? (
-                      <input
-                        data-field-name={fieldName}
-                        value={
-                          fieldName === this.state.selectedProvidedFieldName &&
-                          this.state.isFieldInputFocused
-                            ? this.state.tentativeFieldValue
-                            : entry.value
-                        }
-                        onFocus={this.fieldValueInputOnFocus}
-                        onBlur={this.fieldValueInputOnBlur}
-                        onChange={this.fieldValueInputOnChange}
-                      />
-                    ) : (
-                      entry.value
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="FieldsTable">
+          {allFieldNames.map((fieldName) => {
+            const entry = computedValues.find(
+              (entry) => entry.fieldName === fieldName
+            );
+            return (
+              <div className="FieldsTable__Entry" key={fieldName}>
+                <div className="FieldsTable__Entry__Label">{fieldName}:</div>
+                <div className="FieldsTable__Entry__Value">
+                  {entry === undefined ? (
+                    "Error"
+                  ) : providedFieldNames.includes(fieldName) ? (
+                    <input
+                      data-field-name={fieldName}
+                      value={
+                        fieldName === this.state.selectedProvidedFieldName &&
+                        this.state.isFieldInputFocused
+                          ? this.state.tentativeFieldValue
+                          : entry.value
+                      }
+                      onFocus={this.fieldValueInputOnFocus}
+                      onBlur={this.fieldValueInputOnBlur}
+                      onChange={this.fieldValueInputOnChange}
+                    />
+                  ) : (
+                    entry.value
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         <p className="SpectrogramLabel">Spectrogram</p>
         <canvas className="Spectrogram" ref={this.spectrogramRef} />
