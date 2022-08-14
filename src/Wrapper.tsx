@@ -26,7 +26,7 @@ import {
   SnapauFileInfo,
 } from "./state";
 
-const ARBITRARY_PREFIX_THAT_WILL_DEFINITELY_NOT_BE_CONTAINED_IN_A_PATH =
+const ARBITRARY_PREFIX_THAT_WILL_DEFINITELY_NOT_BE_CONTAINED_IN_A_FILE_NAME =
   "/\\#@:&{}*<>";
 
 export class Wrapper extends React.Component<WrapperProps, WrapperState> {
@@ -123,7 +123,7 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
                 <li
                   key={
                     i +
-                    ARBITRARY_PREFIX_THAT_WILL_DEFINITELY_NOT_BE_CONTAINED_IN_A_PATH +
+                    ARBITRARY_PREFIX_THAT_WILL_DEFINITELY_NOT_BE_CONTAINED_IN_A_FILE_NAME +
                     info.file.name
                   }
                 >
@@ -182,6 +182,21 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
                     {launchStatus.arbitraryDuplicateSnapauName}
                   </span>
                   .
+                </li>
+              )}
+
+              {launchStatus.error === "unrecognized_file_names" && (
+                <li>
+                  Unrecognized file names:
+                  <ol>
+                    {launchStatus.fileNames.map((fileName, i) => (
+                      <li
+                        key={`${i}${ARBITRARY_PREFIX_THAT_WILL_DEFINITELY_NOT_BE_CONTAINED_IN_A_FILE_NAME}${fileName}`}
+                      >
+                        <span className="FileName">{fileName}</span>
+                      </li>
+                    ))}
+                  </ol>
                 </li>
               )}
             </ol>
@@ -374,7 +389,7 @@ function getConfigAndAudioFileFromFileInfoArray(
   | { error: "no_valid_config" }
   | { error: "no_audio_files" }
   | { error: "duplicate_file_names"; arbitraryDuplicateFileName: string }
-  | { error: "unrecognized_file_reaction"; fileNames: string[] }
+  | { error: "unrecognized_file_names"; fileNames: string[] }
   | { error: "duplicate_snapau_names"; arbitraryDuplicateSnapauName: string }
   | { error: undefined; value: [SnatcitConfig, SnapauFileInfo[], string[]] } {
   const validConfigFileInfo: ValidConfigFileInfo[] = allFileInfo.filter(
@@ -444,7 +459,7 @@ function getConfigAndAudioFileFromFileInfoArray(
     unrecognizedFiles.length > 0
   ) {
     return {
-      error: "unrecognized_file_reaction",
+      error: "unrecognized_file_names",
       fileNames: unrecognizedFiles.map((file) => file.name),
     };
   }
