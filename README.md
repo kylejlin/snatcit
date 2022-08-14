@@ -21,8 +21,9 @@ Please read the [user guide](./docs/user_guide.md).
 
 ## License
 
-- The source code and associated documentation are released under the [MIT License](./LICENSE).
-- Audio files are **NOT** licensed. They contain human voice samples, so for privacy reasons, all rights are reserved.
+MIT License
+
+Copyright (c) 2022 Kyle Lin
 
 ## Contribution
 
