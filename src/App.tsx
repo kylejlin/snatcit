@@ -402,20 +402,13 @@ export class App extends React.Component<AppProps, AppState> {
       const segmentStartInSeconds = segmentInMs[0] * 1e-3;
       const segmentEndInSeconds = segmentInMs[1] * 1e-3;
 
-      const audio = document.createElement("audio");
-      audio.addEventListener("loadedmetadata", () => {
-        audio.currentTime = segmentStartInSeconds;
-        audio.volume = this.state.volume;
-        audio.play();
-      });
-      audio.addEventListener("timeupdate", () => {
-        if (audio.currentTime >= segmentEndInSeconds) {
-          audio.pause();
-        }
-      });
-
-      audio.src = URL.createObjectURL(
-        this.props.audioFiles[selectedEntryIndex]
+      const source = this.audioCtx.createBufferSource();
+      source.buffer = audioData.audioBuffer;
+      source.connect(this.audioCtx.destination);
+      source.start(
+        0,
+        segmentStartInSeconds,
+        segmentEndInSeconds - segmentStartInSeconds
       );
     });
   }
