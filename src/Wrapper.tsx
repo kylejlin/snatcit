@@ -378,6 +378,10 @@ function getConfigAndAudioFileFromFileInfoArray(
     info.kind === "audio" ? { keep: true, value: info.file } : { keep: false }
   );
 
+  if (audioFiles.length === 0) {
+    return;
+  }
+
   if (hasDuplicate<File>(audioFiles, (a, b) => a.name === b.name)) {
     return;
   }

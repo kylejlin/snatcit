@@ -37,6 +37,7 @@ export class App extends React.Component<AppProps, AppState> {
     this.fieldValueInputOnFocus = this.fieldValueInputOnFocus.bind(this);
     this.fieldValueInputOnBlur = this.fieldValueInputOnBlur.bind(this);
     this.fieldValueInputOnChange = this.fieldValueInputOnChange.bind(this);
+    this.spectrogramOnClick = this.spectrogramOnClick.bind(this);
     this.windowOnResize = this.windowOnResize.bind(this);
     this.requestCanvasUpdate = this.requestCanvasUpdate.bind(this);
     this.updateCanvas = this.updateCanvas.bind(this);
@@ -141,7 +142,15 @@ export class App extends React.Component<AppProps, AppState> {
               (entry) => entry.fieldName === fieldName
             );
             return (
-              <div className="FieldsTable__Entry" key={fieldName}>
+              <div
+                className={
+                  "FieldsTable__Entry" +
+                  (fieldName === this.state.selectedProvidedFieldName
+                    ? " FieldsTable__Entry--selected"
+                    : "")
+                }
+                key={fieldName}
+              >
                 <div className="FieldsTable__Entry__Label">{fieldName}:</div>
                 <div className="FieldsTable__Entry__Value">
                   {entry === undefined ? (
@@ -169,7 +178,11 @@ export class App extends React.Component<AppProps, AppState> {
         </div>
 
         <p className="SpectrogramLabel">Spectrogram</p>
-        <canvas className="Spectrogram" ref={this.spectrogramRef} />
+        <canvas
+          className="Spectrogram"
+          ref={this.spectrogramRef}
+          onClick={this.spectrogramOnClick}
+        />
       </div>
     );
   }
@@ -305,6 +318,42 @@ export class App extends React.Component<AppProps, AppState> {
               : prevState.config,
           };
         }
+      });
+    });
+  }
+
+  spectrogramOnClick(e: React.MouseEvent): void {
+    const canvas = this.spectrogramRef.current;
+    if (canvas === null) {
+      return;
+    }
+    const { selectedProvidedFieldName } = this.state;
+    if (selectedProvidedFieldName === undefined) {
+      return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const unitX = (e.clientX - rect.left) / rect.width;
+    const { selectedEntryIndex } = this.state;
+    this.getAudioData(selectedEntryIndex, canvas.width).then((audioData) => {
+      const durationInMs = audioData.audioBuffer.duration * 1e3;
+      const timeInMs = Math.max(
+        0,
+        Math.min(Math.floor(unitX * durationInMs), Math.floor(durationInMs))
+      );
+      this.setState((prevState) => {
+        if (prevState.selectedEntryIndex !== selectedEntryIndex) {
+          return prevState;
+        }
+        return {
+          ...prevState,
+          config: updateConfig(
+            prevState.config,
+            this.props.audioFiles[selectedEntryIndex].name,
+            selectedProvidedFieldName,
+            timeInMs
+          ),
+        };
       });
     });
   }

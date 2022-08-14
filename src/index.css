@@ -116,6 +116,11 @@ body,
   width: 3em;
 }
 
+.FieldsTable__Entry--selected {
+  background-color: #222;
+  color: #ddd;
+}
+
 .SpectrogramLabel {
   margin-top: 1em;
 }
