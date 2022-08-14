@@ -3,7 +3,10 @@ import { AppProps, AppState } from "./state";
 import { Header } from "./Header";
 import {
   getAllFieldValuesForEntry,
+  getConfigFileNameFromSuffix,
   LabeledFieldValue,
+  SnatcitConfig,
+  stringifyConfig,
   updateConfig,
 } from "./config";
 import {
@@ -12,6 +15,7 @@ import {
   renderSpectrogram,
 } from "./canvas/renderSpectrogramAndMarkings";
 import { getSpectrumFftData, SpectrumFftData } from "./canvas/calculationUtils";
+import { base64FromUnicode } from "./lib/base64";
 
 export class App extends React.Component<AppProps, AppState> {
   private spectrogramRef: React.RefObject<HTMLCanvasElement>;
@@ -194,7 +198,20 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   downloadButtonOnClick(): void {
-    // TODO
+    const downloadedConfig: SnatcitConfig = {
+      ...this.state.config,
+      creationDate: new Date(),
+    };
+    const configString = stringifyConfig(downloadedConfig);
+    const dataUrl = `data:application/json;base64,${base64FromUnicode(
+      configString
+    )}`;
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = getNextAvailableDownloadFilename(
+      this.props.snatcitConfigFileNames
+    );
+    a.click();
   }
 
   volumeSliderOnChange(change: React.ChangeEvent<HTMLInputElement>): void {
@@ -455,4 +472,15 @@ export class App extends React.Component<AppProps, AppState> {
 export interface AudioData {
   readonly audioBuffer: AudioBuffer;
   readonly spectrumFftData: SpectrumFftData;
+}
+
+function getNextAvailableDownloadFilename(
+  unavailable: readonly string[]
+): string {
+  for (let i = 1; true; ++i) {
+    const proposal = getConfigFileNameFromSuffix(i);
+    if (!unavailable.includes(proposal)) {
+      return proposal;
+    }
+  }
 }

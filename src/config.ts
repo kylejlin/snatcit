@@ -29,10 +29,19 @@ const SNATCIT_CONFIG_JSON_KEYS = {
   },
 } as const;
 
-export const CONFIG_FILE_DEFAULT_NAME = "snatcit.json";
+export const CONFIG_FILE_DEFAULT_NAME = getConfigFileNameFromSuffix(undefined);
 
 export function isConfigFileName(fileName: string): boolean {
-  return /^snatcit(?:-\d+)?\.json$/i.test(fileName);
+  return /^snatcit(?:_\d+)?\.json$/i.test(fileName);
+}
+
+export function getConfigFileNameFromSuffix(
+  suffix: undefined | number
+): string {
+  if (suffix === undefined) {
+    return "snatcit.json";
+  }
+  return `snatcit_${suffix}.json`;
 }
 
 export interface SnatcitConfig {

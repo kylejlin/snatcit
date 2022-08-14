@@ -322,11 +322,11 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
       throw new Error("Launch button was clicked when app was unlaunchable.");
     }
 
-    const [config, audioFiles] = launchResources;
+    const [config, audioFiles, snatcitConfigFileNames] = launchResources;
 
     this.setState({
       kind: WrapperStateKind.LaunchSucceeded,
-      appProps: { initialConfig: config, audioFiles },
+      appProps: { initialConfig: config, audioFiles, snatcitConfigFileNames },
     });
   }
 
@@ -352,7 +352,7 @@ function canLaunch(fileInfo: readonly FileInfo[]): boolean {
 
 function getConfigAndAudioFileFromFileInfoArray(
   allFileInfo: readonly FileInfo[]
-): undefined | [SnatcitConfig, File[]] {
+): undefined | [SnatcitConfig, File[], string[]] {
   const validConfigFileInfo: ValidConfigFileInfo[] = allFileInfo.filter(
     (info): info is ValidConfigFileInfo =>
       info.kind === "config" && info.isValid
@@ -382,5 +382,9 @@ function getConfigAndAudioFileFromFileInfoArray(
     return;
   }
 
-  return [newestConfig, audioFiles];
+  return [
+    newestConfig,
+    audioFiles,
+    validConfigFileInfo.map((info) => info.file.name),
+  ];
 }

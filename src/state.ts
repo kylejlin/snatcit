@@ -65,6 +65,7 @@ export interface LaunchSucceededState {
 
 export interface AppProps {
   mimeType: BrowserAudioMimeType;
+  snatcitConfigFileNames: readonly string[];
   audioFiles: readonly File[];
   initialConfig: SnatcitConfig;
 }
