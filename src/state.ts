@@ -66,8 +66,14 @@ export interface LaunchSucceededState {
 export interface AppProps {
   mimeType: BrowserAudioMimeType;
   snatcitConfigFileNames: readonly string[];
-  audioFiles: readonly File[];
+  snapauFileInfo: readonly SnapauFileInfo[];
   initialConfig: SnatcitConfig;
+}
+
+export interface SnapauFileInfo {
+  readonly kind: "snapau";
+  readonly file: File;
+  readonly snapauName: string;
 }
 
 export interface AppState {

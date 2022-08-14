@@ -11,7 +11,6 @@ import {
   filterMap,
   getArbitraryDuplicate,
   getGithubUsernameOfHost,
-  hasDuplicate,
   isAudioFile,
 } from "./misc";
 import {
@@ -24,6 +23,7 @@ import {
   UnidentifiedFileInfo,
   ValidConfigFileInfo,
   ALL_BROWSER_AUDIO_MIME_TYPES,
+  SnapauFileInfo,
 } from "./state";
 
 const ARBITRARY_PREFIX_THAT_WILL_DEFINITELY_NOT_BE_CONTAINED_IN_A_PATH =
@@ -323,15 +323,20 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
       state.fileInfo
     );
 
-    if (launchResources === undefined) {
+    if (launchResources.error !== undefined) {
       throw new Error("Launch button was clicked when app was unlaunchable.");
     }
 
-    const [config, audioFiles, snatcitConfigFileNames] = launchResources;
+    const [config, snapauFileInfo, snatcitConfigFileNames] =
+      launchResources.value;
 
     this.setState({
       kind: WrapperStateKind.LaunchSucceeded,
-      appProps: { initialConfig: config, audioFiles, snatcitConfigFileNames },
+      appProps: {
+        initialConfig: config,
+        snapauFileInfo,
+        snatcitConfigFileNames,
+      },
     });
   }
 
@@ -357,14 +362,20 @@ function canLaunch(fileInfo: readonly FileInfo[]): boolean {
 
 function getConfigAndAudioFileFromFileInfoArray(
   allFileInfo: readonly FileInfo[]
-): undefined | [SnatcitConfig, File[], string[]] {
+):
+  | { error: "no_valid_config" }
+  | { error: "no_audio_files" }
+  | { error: "duplicate_file_names"; arbitraryDuplicateFileName: string }
+  | { error: "unrecognized_file_reaction"; fileNames: string[] }
+  | { error: "duplicate_snapau_names"; arbitraryDuplicateSnapauName: string }
+  | { error: undefined; value: [SnatcitConfig, SnapauFileInfo[], string[]] } {
   const validConfigFileInfo: ValidConfigFileInfo[] = allFileInfo.filter(
     (info): info is ValidConfigFileInfo =>
       info.kind === "config" && info.isValid
   );
 
   if (validConfigFileInfo.length === 0) {
-    return;
+    return { error: "no_valid_config" };
   }
 
   let newestConfigFileInfo = validConfigFileInfo[0];
@@ -384,16 +395,82 @@ function getConfigAndAudioFileFromFileInfoArray(
   );
 
   if (audioFiles.length === 0) {
-    return;
+    return { error: "no_audio_files" };
   }
 
-  if (hasDuplicate<File>(audioFiles, (a, b) => a.name === b.name)) {
-    return;
-  }
-
-  return [
-    newestConfig,
+  const fileNameDuplicateStatus = getArbitraryDuplicate<File>(
     audioFiles,
-    validConfigFileInfo.map((info) => info.file.name),
-  ];
+    (a, b) => a.name === b.name
+  );
+  if (fileNameDuplicateStatus.hasDuplicate) {
+    return {
+      error: "duplicate_file_names",
+      arbitraryDuplicateFileName: fileNameDuplicateStatus.duplicate.name,
+    };
+  }
+
+  const snapauFileInfoFromRecognizedFiles: SnapauFileInfo[] = filterMap<
+    File,
+    SnapauFileInfo[]
+  >(audioFiles, (file) => {
+    const snapauNames = newestConfig.fileToSnapauMap[file.name];
+    if (snapauNames === undefined) {
+      return { keep: false };
+    }
+    return {
+      keep: true,
+      value: snapauNames.map((snapauName) => ({
+        kind: "snapau",
+        file,
+        snapauName,
+      })),
+    };
+  }).flat();
+
+  const unrecognizedFiles = audioFiles.filter(
+    (file) => newestConfig.fileToSnapauMap[file.name] === undefined
+  );
+
+  if (
+    newestConfig.unrecognizedFileReaction === "error" &&
+    unrecognizedFiles.length > 0
+  ) {
+    return {
+      error: "unrecognized_file_reaction",
+      fileNames: unrecognizedFiles.map((file) => file.name),
+    };
+  }
+
+  const snapauFileInfoFromUnrecognizedFiles: SnapauFileInfo[] =
+    newestConfig.unrecognizedFileReaction === "ignore"
+      ? []
+      : unrecognizedFiles.map((file) => ({
+          kind: "snapau",
+          file,
+          snapauName: file.name,
+        }));
+  const snapauFileInfo = snapauFileInfoFromRecognizedFiles.concat(
+    snapauFileInfoFromUnrecognizedFiles
+  );
+
+  const snapauNameDuplicateStatus = getArbitraryDuplicate<SnapauFileInfo>(
+    snapauFileInfo,
+    (a, b) => a.snapauName === b.snapauName
+  );
+  if (snapauNameDuplicateStatus.hasDuplicate) {
+    return {
+      error: "duplicate_snapau_names",
+      arbitraryDuplicateSnapauName:
+        snapauNameDuplicateStatus.duplicate.snapauName,
+    };
+  }
+
+  return {
+    error: undefined,
+    value: [
+      newestConfig,
+      snapauFileInfo,
+      validConfigFileInfo.map((info) => info.file.name),
+    ],
+  };
 }

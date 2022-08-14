@@ -58,7 +58,7 @@ export type UnrecognizedFileReaction =
 export interface SnatcitConfig {
   readonly creationDate: Date;
   readonly fileToSnapauMap: {
-    readonly [realFileName: string]: undefined | string;
+    readonly [realFileName: string]: undefined | readonly string[];
   };
   readonly unrecognizedFileReaction: UnrecognizedFileReaction;
   readonly spectrogram: {
@@ -315,13 +315,13 @@ export function stringifyConfig(config: SnatcitConfig): string {
 
 export function getAllFieldValuesForEntry(
   config: SnatcitConfig,
-  fileName: string
+  snapauName: string
 ): {
   computedValues: LabeledFieldValue[];
   namesOfDerivedFieldsThatCouldNotBeComputed: string[];
 } {
   const providedFieldValues: { [fieldName: string]: undefined | number } =
-    config.entries.find((entry) => entry.name === fileName)
+    config.entries.find((entry) => entry.name === snapauName)
       ?.providedFieldValues ?? {};
   const computedValues: LabeledFieldValue[] = [];
   const namesOfDerivedFieldsThatCouldNotBeComputed: string[] = [];
@@ -366,15 +366,17 @@ export function getAllFieldValuesForEntry(
 
 export function updateConfig(
   config: SnatcitConfig,
-  fileName: string,
+  snapauName: string,
   providedFieldName: string,
   value: number
 ): SnatcitConfig {
-  const existingEntry = config.entries.find((entry) => entry.name === fileName);
+  const existingEntry = config.entries.find(
+    (entry) => entry.name === snapauName
+  );
   const previousEffectiveEntry: Entry = existingEntry ?? {
-    name: fileName,
+    name: snapauName,
     providedFieldValues: Object.fromEntries(
-      getAllFieldValuesForEntry(config, fileName)
+      getAllFieldValuesForEntry(config, snapauName)
         .computedValues.filter((fieldEntry) => fieldEntry.wasProvided)
         .map((fieldEntry) => [fieldEntry.fieldName, fieldEntry.value])
     ),
@@ -392,7 +394,7 @@ export function updateConfig(
       existingEntry === undefined
         ? config.entries.concat([updatedEntry])
         : config.entries.map((entry) =>
-            entry.name === fileName ? updatedEntry : entry
+            entry.name === snapauName ? updatedEntry : entry
           ),
   };
 }

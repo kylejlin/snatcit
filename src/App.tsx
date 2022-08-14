@@ -94,7 +94,7 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   override render(): React.ReactElement {
-    const fileNames = this.props.audioFiles.map((f) => f.name);
+    const snapauNames = this.props.snapauFileInfo.map((f) => f.snapauName);
     const { selectedEntryIndex: selectedIndex, config } = this.state;
     const { providedFieldNames } = config;
     const allFieldNames = providedFieldNames.concat(
@@ -102,7 +102,7 @@ export class App extends React.Component<AppProps, AppState> {
     );
     const { computedValues } = getAllFieldValuesForEntry(
       this.state.config,
-      this.props.audioFiles[this.state.selectedEntryIndex].name
+      this.props.snapauFileInfo[this.state.selectedEntryIndex].snapauName
     );
     const isPaused = this.state.playedSegmentInMs === undefined;
     return (
@@ -111,8 +111,8 @@ export class App extends React.Component<AppProps, AppState> {
 
         <p>
           Current file:{" "}
-          <span className="FileName">{fileNames[selectedIndex]}</span> (
-          {selectedIndex + 1}/{fileNames.length})
+          <span className="FileName">{snapauNames[selectedIndex]}</span> (
+          {selectedIndex + 1}/{snapauNames.length})
         </p>
 
         <div className="VolumeInputContainer">
@@ -144,7 +144,7 @@ export class App extends React.Component<AppProps, AppState> {
         </button>
         <button
           className="App__Button--next Button--secondary"
-          disabled={!(selectedIndex < fileNames.length - 1 && isPaused)}
+          disabled={!(selectedIndex < snapauNames.length - 1 && isPaused)}
           onClick={this.nextFileButtonOnClick}
         >
           Next
@@ -223,7 +223,7 @@ export class App extends React.Component<AppProps, AppState> {
 
   nextFileButtonOnClick(): void {
     const nextIndex = Math.min(
-      this.props.audioFiles.length - 1,
+      this.props.snapauFileInfo.length - 1,
       this.state.selectedEntryIndex + 1
     );
     this.setState(
@@ -280,7 +280,7 @@ export class App extends React.Component<AppProps, AppState> {
     }
     const { computedValues } = getAllFieldValuesForEntry(
       this.state.config,
-      this.props.audioFiles[this.state.selectedEntryIndex].name
+      this.props.snapauFileInfo[this.state.selectedEntryIndex].snapauName
     );
     const fieldEntry = computedValues.find(
       (entry) => entry.fieldName === fieldName
@@ -350,7 +350,7 @@ export class App extends React.Component<AppProps, AppState> {
             config: isParsedValueValid
               ? updateConfig(
                   prevState.config,
-                  this.props.audioFiles[editedEntryIndex].name,
+                  this.props.snapauFileInfo[editedEntryIndex].snapauName,
                   fieldName,
                   parsedValue
                 )
@@ -401,7 +401,7 @@ export class App extends React.Component<AppProps, AppState> {
       );
       const { computedValues } = getAllFieldValuesForEntry(
         this.state.config,
-        this.props.audioFiles[selectedEntryIndex].name
+        this.props.snapauFileInfo[selectedEntryIndex].snapauName
       );
       const segmentInMs = getIntervalContaining(
         [0, durationInMs].concat(
@@ -455,7 +455,7 @@ export class App extends React.Component<AppProps, AppState> {
           ...prevState,
           config: updateConfig(
             prevState.config,
-            this.props.audioFiles[selectedEntryIndex].name,
+            this.props.snapauFileInfo[selectedEntryIndex].snapauName,
             selectedProvidedFieldName,
             timeInMs
           ),
@@ -493,7 +493,7 @@ export class App extends React.Component<AppProps, AppState> {
           resolve(data);
         });
       });
-      fr.readAsArrayBuffer(this.props.audioFiles[index]);
+      fr.readAsArrayBuffer(this.props.snapauFileInfo[index].file);
     });
   }
 
@@ -597,7 +597,7 @@ export class App extends React.Component<AppProps, AppState> {
 
     const { computedValues } = getAllFieldValuesForEntry(
       this.state.config,
-      this.props.audioFiles[this.state.selectedEntryIndex].name
+      this.props.snapauFileInfo[this.state.selectedEntryIndex].snapauName
     );
     return this.getAudioData(this.state.selectedEntryIndex, canvas.width).then(
       (audioData) => {
