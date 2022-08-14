@@ -62,6 +62,7 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
   }
 
   override componentDidMount(): void {
+    // Just for debug purposes.
     (window as any).appWrapper = this;
   }
 

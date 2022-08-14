@@ -79,7 +79,9 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   override componentDidMount(): void {
+    // Just for debug purposes.
     (window as any).app = this;
+
     this.requestCanvasUpdate();
     window.addEventListener("resize", this.windowOnResize);
   }
