@@ -302,6 +302,7 @@ export function stringifyConfig(config: SnatcitConfig): string {
       ),
       [SNATCIT_CONFIG_JSON_KEYS.defaultValues]: config.defaultValues,
       [SNATCIT_CONFIG_JSON_KEYS.fieldColors]: config.fieldColors,
+      [SNATCIT_CONFIG_JSON_KEYS.playedSegmentColor]: config.playedSegmentColor,
       [SNATCIT_CONFIG_JSON_KEYS.entries]: config.entries.map((entry) => ({
         [SNATCIT_CONFIG_JSON_KEYS.entryKeys.name]: entry.name,
         [SNATCIT_CONFIG_JSON_KEYS.entryKeys.providedFieldValues]:
