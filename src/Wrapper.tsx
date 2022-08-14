@@ -95,6 +95,8 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
       (a, b) => a.name === b.name
     );
 
+    const launchStatus = getConfigAndAudioFileFromFileInfoArray(state.fileInfo);
+
     return (
       <div className="Wrapper Wrapper--prelaunch">
         <Header />
@@ -143,7 +145,7 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
           </div>
         )}
 
-        {canLaunch(state.fileInfo) ? (
+        {launchStatus.error === undefined ? (
           <div className="StatusSection">
             <p className="ReadyToLaunchNotification">
               Ready to launch. Please click the "Launch" button to continue.
@@ -172,6 +174,16 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
                   . You can only have at most one.
                 </li>
               )}
+
+              {launchStatus.error === "duplicate_snapau_names" && (
+                <li>
+                  Duplicate snapau{" "}
+                  <span className="FileName">
+                    {launchStatus.arbitraryDuplicateSnapauName}
+                  </span>
+                  .
+                </li>
+              )}
             </ol>
           </div>
         )}
@@ -184,7 +196,7 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
         </button>
         <button
           className="Wrapper--prelaunch__Button--launch Button--primary"
-          disabled={!canLaunch(state.fileInfo)}
+          disabled={launchStatus.error !== undefined}
           onClick={this.launchButtonOnClick}
         >
           Launch
@@ -355,10 +367,6 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
 }
 
 type WrapperProps = Record<string, unknown>;
-
-function canLaunch(fileInfo: readonly FileInfo[]): boolean {
-  return getConfigAndAudioFileFromFileInfoArray(fileInfo) !== undefined;
-}
 
 function getConfigAndAudioFileFromFileInfoArray(
   allFileInfo: readonly FileInfo[]
