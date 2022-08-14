@@ -89,5 +89,6 @@ export interface AppState {
   readonly selectedProvidedFieldName: undefined | string;
   readonly isFieldInputFocused: boolean;
   readonly tentativeFieldValue: string;
+  readonly playedSegmentInMs: undefined | readonly [number, number];
   readonly config: SnatcitConfig;
 }

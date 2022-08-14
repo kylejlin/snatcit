@@ -1,4 +1,4 @@
-import { RgbTuple } from "./canvas/calculationUtils";
+import { RgbaTuple, RgbTuple } from "./canvas/calculationUtils";
 import { evalCmamekExpression } from "./lib/cmamek";
 import { hasDuplicate } from "./misc";
 
@@ -9,6 +9,7 @@ const SNATCIT_CONFIG_JSON_KEYS = {
   derivedFields: "derived_fields",
   defaultValues: "default_values",
   fieldColors: "field_colors",
+  playedSegmentColor: "played_segment_color",
   entries: "entries",
 
   spectrogramKeys: {
@@ -61,6 +62,7 @@ export interface SnatcitConfig {
   readonly derivedFields: DerivedField[];
   readonly defaultValues: { [fieldName: string]: undefined | number };
   readonly fieldColors: { [fieldName: string]: undefined | RgbTuple };
+  readonly playedSegmentColor: RgbaTuple;
   readonly entries: readonly Entry[];
 }
 
@@ -136,6 +138,8 @@ export function parseConfig(
     );
     const defaultValues = json[SNATCIT_CONFIG_JSON_KEYS.defaultValues];
     const fieldColors = json[SNATCIT_CONFIG_JSON_KEYS.fieldColors];
+    const playedSegmentColor =
+      json[SNATCIT_CONFIG_JSON_KEYS.playedSegmentColor];
     const entries = json[SNATCIT_CONFIG_JSON_KEYS.entries].map(
       (rawEntry: any) => ({
         name: rawEntry[SNATCIT_CONFIG_JSON_KEYS.entryKeys.name],
@@ -176,6 +180,7 @@ export function parseConfig(
       (allFieldNames.every((fieldName: string) =>
         isValidRgbTuple(fieldColors[fieldName])
       ) as boolean) &&
+      isValidRgbaTuple(playedSegmentColor) &&
       (entries.every(
         (entry: any) =>
           typeof entry.name === "string" &&
@@ -193,6 +198,7 @@ export function parseConfig(
           derivedFields,
           defaultValues,
           fieldColors,
+          playedSegmentColor,
           entries,
         },
       };
@@ -207,7 +213,27 @@ function isValidRgbTuple(v: unknown): boolean {
   return (
     Array.isArray(v) &&
     v.length === 3 &&
-    v.every((colorComponent) => typeof colorComponent === "number")
+    v.every(
+      (colorComponent) =>
+        typeof colorComponent === "number" &&
+        Number.isInteger(colorComponent) &&
+        0 <= colorComponent &&
+        colorComponent <= 255
+    )
+  );
+}
+
+function isValidRgbaTuple(v: unknown): boolean {
+  return (
+    Array.isArray(v) &&
+    v.length === 4 &&
+    v.every(
+      (colorComponent) =>
+        typeof colorComponent === "number" &&
+        Number.isInteger(colorComponent) &&
+        0 <= colorComponent &&
+        colorComponent <= 255
+    )
   );
 }
 

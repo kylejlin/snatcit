@@ -136,12 +136,12 @@ export function copyChannelAverageInto(
   }
 }
 
-export function rgbTupleToCssFillStyle([r, g, b]: readonly [
-  number,
-  number,
-  number
-]): string {
+export function rgbTupleToCssFillStyle([r, g, b]: RgbTuple): string {
   return `rgb(${r}, ${g}, ${b})`;
+}
+
+export function rgbaTupleToCssFillStyle([r, g, b, a]: RgbaTuple): string {
+  return `rgba(${r}, ${g}, ${b}, ${a / 255})`;
 }
 
 type ColorMap = {
@@ -180,6 +180,7 @@ export function getColorMap(
 }
 
 export type RgbTuple = readonly [number, number, number];
+export type RgbaTuple = readonly [number, number, number, number];
 
 export function getUniformColorMap(color: RgbTuple): ColorMap {
   const mutMap: { [mutU8: number]: RgbTuple } = {};

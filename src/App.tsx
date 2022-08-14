@@ -12,6 +12,7 @@ import {
 import {
   RenderConfig,
   renderMarkings,
+  renderPlayedSegmentOverlayIfPossible,
   renderSpectrogram,
 } from "./canvas/renderSpectrogramAndMarkings";
 import { getSpectrumFftData, SpectrumFftData } from "./canvas/calculationUtils";
@@ -50,6 +51,7 @@ export class App extends React.Component<AppProps, AppState> {
     this.updateCanvas = this.updateCanvas.bind(this);
     this.renderSpectrogramUsingCache =
       this.renderSpectrogramUsingCache.bind(this);
+    this.clearPlayedSegment = this.clearPlayedSegment.bind(this);
 
     this.state = {
       volume: 1,
@@ -59,6 +61,7 @@ export class App extends React.Component<AppProps, AppState> {
       selectedProvidedFieldName: undefined,
       isFieldInputFocused: false,
       tentativeFieldValue: "",
+      playedSegmentInMs: undefined,
     };
 
     this.spectrogramRef = React.createRef();
@@ -374,6 +377,10 @@ export class App extends React.Component<AppProps, AppState> {
     e: { clientX: number },
     canvas: HTMLCanvasElement
   ): void {
+    if (this.state.playedSegmentInMs !== undefined) {
+      return;
+    }
+
     const rect = canvas.getBoundingClientRect();
     const unitX = (e.clientX - rect.left) / rect.width;
     const { selectedEntryIndex } = this.state;
@@ -399,18 +406,26 @@ export class App extends React.Component<AppProps, AppState> {
         ),
         timeInMs
       );
-      const segmentStartInSeconds = segmentInMs[0] * 1e-3;
-      const segmentEndInSeconds = segmentInMs[1] * 1e-3;
+      this.setState({ playedSegmentInMs: segmentInMs }, () => {
+        const segmentStartInSeconds = segmentInMs[0] * 1e-3;
+        const segmentEndInSeconds = segmentInMs[1] * 1e-3;
 
-      const source = this.audioCtx.createBufferSource();
-      source.buffer = audioData.audioBuffer;
-      source.connect(this.audioCtx.destination);
-      source.start(
-        0,
-        segmentStartInSeconds,
-        segmentEndInSeconds - segmentStartInSeconds
-      );
+        const source = this.audioCtx.createBufferSource();
+        source.buffer = audioData.audioBuffer;
+        source.connect(this.audioCtx.destination);
+        source.start(
+          0,
+          segmentStartInSeconds,
+          segmentEndInSeconds - segmentStartInSeconds
+        );
+        this.requestCanvasUpdate();
+        setTimeout(this.clearPlayedSegment, segmentInMs[1] - segmentInMs[0]);
+      });
     });
+  }
+
+  clearPlayedSegment(): void {
+    this.setState({ playedSegmentInMs: undefined }, this.requestCanvasUpdate);
   }
 
   setFieldValueBasedOnMousePosition(
@@ -499,6 +514,7 @@ export class App extends React.Component<AppProps, AppState> {
           audioCtx: this.audioCtx,
           audioBuffer,
           snatcitConfig: this.state.config,
+          playedSegmentInMs: this.state.playedSegmentInMs,
         });
 
         const imgData = internalCanvasCtx.getImageData(
@@ -531,6 +547,7 @@ export class App extends React.Component<AppProps, AppState> {
 
     this.renderPromise = this.useSelectedAudioFileToRender([
       this.renderSpectrogramUsingCache,
+      renderPlayedSegmentOverlayIfPossible,
       renderMarkings,
     ]).then(() => {
       canvas.style.position = "static";
@@ -585,6 +602,7 @@ export class App extends React.Component<AppProps, AppState> {
           audioCtx: this.audioCtx,
           audioBuffer: audioData.audioBuffer,
           snatcitConfig: this.state.config,
+          playedSegmentInMs: this.state.playedSegmentInMs,
         };
         function f(i: number): Promise<void> {
           return Promise.resolve(
