@@ -117,6 +117,7 @@ body,
 
 .FieldsTable__Entry__Label {
   margin-right: 1em;
+  user-select: none;
 }
 
 .FieldsTable__Entry__Value input {
