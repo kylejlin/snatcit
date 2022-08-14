@@ -36,9 +36,17 @@ Snatcit aims to solve this. With Snatcit, you just need to upload all the files 
 ### Terminology
 
 - The top-level audio feature is called a _snapau_ (rhymes with "saw cow").
-  In the UTAU community, this may be called a "phone". However, Snatcit is designed as a general-purpose feature labeler (although realistically, the primary use will probably be for oto-ing), so we avoid the use of the word "phone".
-  > Optional etymology section: "snapau" roughly translates to "sound part" in Lojban.
+  In the UTAU community, this may be called a "phone". However, Snatcit is designed as a general-purpose feature labeler (although realistically, the primary use will probably be for oto-ing), so we avoid the use of the word "phone", and use the more general "snapau" instead.
+  > Optional etymology snippet: "snapau" roughly translates to "sound part" in Lojban.
 - The subfeatures are called _segments_. Each snapau is partitioned into one or more segments.
+- A _snapau entry_ is a data structure that defines the start and end of each segment in a snapau. Each snapau has at most one snapau entry (if a snapau has no snapau entry, default values are used to compute the segments).
+- The segment start and end times are determined by the values of _fields_.
+  There are 2 kinds of fields:
+
+  - _Provided fields_ - The user sets the sets these manually.
+  - _Derived fields_ - These are automatically computed from other field values. The user cannot set these manually.
+
+- Each field has exactly one _field value_. As previously stated, field values represent the borders of segments. For example, if I had a file that was `2000` milliseconds, and the field values `[500, 800, 1700]`, then the segments would be the intervals `[0, 500)`, `[500, 800)`, `[800, 1700)`, and `[1700, 2000]`.
 - A `snatcit.json` file is any JSON file that has a name starting with `snatcit` and no periods (except for the period in `.json`).
   For example, `snatcit.json`, `snatcit_1.json`, and `snatcit (2).json` are all legal names for `snatcit.json` files. These files are used to configure Snatcit. The important thing to take away from this bullet is that a so-called `snatcit.json` file does **NOT** need to be named `snatcit.json`, verbatim. Instead, it can have any name that follows the rule listed above.
 
@@ -53,7 +61,7 @@ Snatcit aims to solve this. With Snatcit, you just need to upload all the files 
 5. Select the `snatcit.json` files and the audio files.
 6. Click the "Launch" button.
 
-### Part 2. Record
+### Part 2. Identify
 
 1. Click on one of the input boxes under the "Fields" heading.
    1. Type in the desired value for the field. The value is given in milliseconds (from the start of the audio file).
@@ -134,12 +142,14 @@ milliseconds relative to the start of the audio file.
 | `default_values`                        | The default values for the provided fields. You **MUST** specify a default value for each provided field. Do **NOT** specify default values for derived fields--if you do, those defaults will be ignored.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `{ "offset": 0, "preutterance": 0, "fixed_region": 0, "cutoff": 0 }`                                                                   |
 | `field_colors`                          | The color to render each field marker on the spectrogram. You **MUST** specify a color for **ALL** fields (i.e., both provided and derived fields). Colors are given in unsigned eight-bit RGB tuples.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | `{ "offset": [0, 0, 255], "overlap": [0, 255, 0], "preutterance": [255, 0, 0], "fixed_region": [255, 0, 255], "cutoff": [0, 0, 255] }` |
 | `played_segment_color`                  | The color of the _played segment overlay_. The played segment overlay is the rectangle that gets rendered over the region of the spectrogram that is getting played. This value is an RGB**A** tuple, meaning it has _four_ (not three!) components. Each components must be between `0` and `255` (inclusive).                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `[255, 255, 255, 128]`                                                                                                                 |
-| `entries`                               | An array of _file entries_. A file entry is a set of provided field values corresponding to an audio file. There can be at most one entry for each file name. Generally, you should set this to `[]`, and let the app fill this out for you. <br> For those who want to manually edit this for some reason, please see the [Additional Notes](#additional-notes) below this table.                                                                                                                                                                                                                                                                                                                                                                                                         | `[]`                                                                                                                                   |
+| `entries`                               | An array of _snapau entries_. A snapau entry is a set of provided field values corresponding to a given snapau. There can be at most one snapau entry for each snapau. Generally, you should set this to `[]`, and let the app fill this out for you. <br> For those who want to manually edit this for some reason, please see the [Additional Notes](#additional-notes) below this table.                                                                                                                                                                                                                                                                                                                                                                                                | `[]`                                                                                                                                   |
 
 ### Additional Notes
 
 - Every field must have a unique name.
-- An element of `entries` takes the form `{ "name": <FILE_NAME>, "provided_field_values": <VALUES> }`, where `<FILE_NAME>` is the name of the file that the file entry is associated with, and `<VALUES>` is a map from provided field names to values (in milliseconds).
+- Each uploaded audio file must have a unique name.
+- Each snapau must have a unique name.
+- An element of `entries` takes the form `{ "name": <SNAPAU_NAME>, "provided_field_values": <VALUES> }`, where `<SNAPAU_NAME>` is the name of the snapau that the snapau entry is associated with, and `<VALUES>` is a map from provided field names to values (in milliseconds).
 
   For example (the below values are completely hypothetical):
 
@@ -188,6 +198,4 @@ milliseconds relative to the start of the audio file.
   }
   ```
 
-  Remember that there can only be at most one file entry per file, so if you have a file containing multiple phones, you will need to duplicate the file for each phone, and give each of those duplicates a separate name (like how we do it here, with `(-ka)_ka_ke_ki_ko_ku.wav`, `-ka_(ka)_ke_ki_ko_ku.wav`, `-ka_ka_(ke)_ki_ko_ku.wav`, and `-ka_ka_ke_(ki)_ko_ku.wav`).
-
-  In the future, we may add support for multiple file entries per file.
+  Remember that there can only be at most one snapau entry per snapau.
