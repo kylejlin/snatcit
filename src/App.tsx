@@ -154,7 +154,10 @@ export class App extends React.Component<AppProps, AppState> {
                   "FieldsTable__Entry" +
                   (fieldName === this.state.selectedProvidedFieldName
                     ? " FieldsTable__Entry--selected"
-                    : "")
+                    : "") +
+                  (providedFieldNames.includes(fieldName)
+                    ? " FieldsTable__Entry--provided"
+                    : " FieldsTable__Entry--derived")
                 }
                 key={fieldName}
                 data-field-name={fieldName}

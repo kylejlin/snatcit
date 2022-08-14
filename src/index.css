@@ -96,11 +96,18 @@ body,
 
 .FieldsTable__Entry {
   display: inline-block;
-  border: 1px solid #222;
   border-radius: 0.5em;
   padding: 0.5em;
   margin-right: var(--inter-entry-spacing);
   margin-bottom: var(--inter-entry-spacing);
+}
+
+.FieldsTable__Entry--provided {
+  border: 1px solid #222;
+}
+
+.FieldsTable__Entry--derived {
+  border: 1px dashed #222;
 }
 
 .FieldsTable__Entry__Label,
