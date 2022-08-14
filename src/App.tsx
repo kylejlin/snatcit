@@ -18,6 +18,7 @@ import { getSpectrumFftData, SpectrumFftData } from "./canvas/calculationUtils";
 import { base64FromUnicode } from "./lib/base64";
 import {
   getAttributeFromNearestAncestor,
+  getIntervalContaining,
   noOp,
   toLowerCaseIfString,
 } from "./misc";
@@ -249,8 +250,6 @@ export class App extends React.Component<AppProps, AppState> {
     }
 
     const clampedVolume = Math.max(0, Math.min(unclamped, 1));
-    // TODO
-    // audioElement.volume = clampedVolume;
     this.setState({ volume: clampedVolume });
   }
 
@@ -361,9 +360,71 @@ export class App extends React.Component<AppProps, AppState> {
     }
     const { selectedProvidedFieldName } = this.state;
     if (selectedProvidedFieldName === undefined) {
-      return;
+      this.playAudioSegmentBasedOnMousePosition(e, canvas);
+    } else {
+      this.setFieldValueBasedOnMousePosition(
+        e,
+        canvas,
+        selectedProvidedFieldName
+      );
     }
+  }
 
+  playAudioSegmentBasedOnMousePosition(
+    e: { clientX: number },
+    canvas: HTMLCanvasElement
+  ): void {
+    const rect = canvas.getBoundingClientRect();
+    const unitX = (e.clientX - rect.left) / rect.width;
+    const { selectedEntryIndex } = this.state;
+    this.getAudioData(selectedEntryIndex, canvas.width).then((audioData) => {
+      if (this.state.selectedEntryIndex !== selectedEntryIndex) {
+        return;
+      }
+
+      const durationInMs = audioData.audioBuffer.duration * 1e3;
+      const timeInMs = Math.max(
+        0,
+        Math.min(Math.floor(unitX * durationInMs), Math.floor(durationInMs))
+      );
+      const { computedValues } = getAllFieldValuesForEntry(
+        this.state.config,
+        this.props.audioFiles[selectedEntryIndex].name
+      );
+      const segmentInMs = getIntervalContaining(
+        [0, durationInMs].concat(
+          computedValues.map((fieldEntry) =>
+            Math.max(0, Math.min(fieldEntry.value, durationInMs))
+          )
+        ),
+        timeInMs
+      );
+      const segmentStartInSeconds = segmentInMs[0] * 1e-3;
+      const segmentEndInSeconds = segmentInMs[1] * 1e-3;
+
+      const audio = document.createElement("audio");
+      audio.addEventListener("loadedmetadata", () => {
+        audio.currentTime = segmentStartInSeconds;
+        audio.volume = this.state.volume;
+        audio.play();
+      });
+      audio.addEventListener("timeupdate", () => {
+        if (audio.currentTime >= segmentEndInSeconds) {
+          audio.pause();
+        }
+      });
+
+      audio.src = URL.createObjectURL(
+        this.props.audioFiles[selectedEntryIndex]
+      );
+    });
+  }
+
+  setFieldValueBasedOnMousePosition(
+    e: { clientX: number },
+    canvas: HTMLCanvasElement,
+    selectedProvidedFieldName: string
+  ): void {
     const rect = canvas.getBoundingClientRect();
     const unitX = (e.clientX - rect.left) / rect.width;
     const { selectedEntryIndex } = this.state;
