@@ -122,6 +122,7 @@ export class App extends React.Component<AppProps, AppState> {
             min={0}
             max={1}
             step={0.01}
+            disabled={this.state.playedSegmentInMs !== undefined}
             value={this.state.volume}
             onChange={this.volumeSliderOnChange}
           />
@@ -181,6 +182,7 @@ export class App extends React.Component<AppProps, AppState> {
                   ) : providedFieldNames.includes(fieldName) ? (
                     <input
                       data-field-name={fieldName}
+                      disabled={this.state.playedSegmentInMs !== undefined}
                       value={
                         fieldName === this.state.selectedProvidedFieldName &&
                         this.state.isFieldInputFocused
