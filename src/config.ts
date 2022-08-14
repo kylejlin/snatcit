@@ -216,6 +216,20 @@ export function stringifyConfig(config: SnatcitConfig): string {
     {
       [SNATCIT_CONFIG_JSON_KEYS.creationDateString]:
         config.creationDate.toISOString(),
+      [SNATCIT_CONFIG_JSON_KEYS.spectrogram]: {
+        [SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.idealBinSizeInHz]:
+          config.spectrogram.idealBinSizeInHz,
+        [SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.idealMaxFrequencyInHz]:
+          config.spectrogram.idealMaxFrequencyInHz,
+        [SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.idealWindowSizeInMs]:
+          config.spectrogram.idealWindowSizeInMs,
+        [SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.idealStepSizeInMs]:
+          config.spectrogram.idealStepSizeInMs,
+        [SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.colorScale]:
+          config.spectrogram.colorScale,
+        [SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.backgroundColor]:
+          config.spectrogram.backgroundColor,
+      },
       [SNATCIT_CONFIG_JSON_KEYS.providedFieldNames]: config.providedFieldNames,
       [SNATCIT_CONFIG_JSON_KEYS.derivedFields]: config.derivedFields.map(
         (derivedField) => ({
@@ -224,6 +238,8 @@ export function stringifyConfig(config: SnatcitConfig): string {
             derivedField.cmamekSrc,
         })
       ),
+      [SNATCIT_CONFIG_JSON_KEYS.defaultValues]: config.defaultValues,
+      [SNATCIT_CONFIG_JSON_KEYS.fieldColors]: config.fieldColors,
       [SNATCIT_CONFIG_JSON_KEYS.entries]: config.entries.map((entry) => ({
         [SNATCIT_CONFIG_JSON_KEYS.entryKeys.name]: entry.name,
         [SNATCIT_CONFIG_JSON_KEYS.entryKeys.providedFieldValues]:
