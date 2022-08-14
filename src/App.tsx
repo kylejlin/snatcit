@@ -56,7 +56,6 @@ export class App extends React.Component<AppProps, AppState> {
 
     this.state = {
       volume: 1,
-      isPlaying: false,
       selectedEntryIndex: 0,
       config: this.props.initialConfig,
       selectedProvidedFieldName: undefined,
@@ -96,7 +95,7 @@ export class App extends React.Component<AppProps, AppState> {
 
   override render(): React.ReactElement {
     const fileNames = this.props.audioFiles.map((f) => f.name);
-    const { selectedEntryIndex: selectedIndex, isPlaying, config } = this.state;
+    const { selectedEntryIndex: selectedIndex, config } = this.state;
     const { providedFieldNames } = config;
     const allFieldNames = providedFieldNames.concat(
       config.derivedFields.map((f) => f.name)
@@ -105,6 +104,7 @@ export class App extends React.Component<AppProps, AppState> {
       this.state.config,
       this.props.audioFiles[this.state.selectedEntryIndex].name
     );
+    const isPaused = this.state.playedSegmentInMs === undefined;
     return (
       <div className="App">
         <Header />
@@ -130,21 +130,21 @@ export class App extends React.Component<AppProps, AppState> {
 
         <button
           className="App__Button--previous Button--secondary"
-          disabled={!(0 < selectedIndex && !isPlaying)}
+          disabled={!(0 < selectedIndex && isPaused)}
           onClick={this.previousFileButtonOnClick}
         >
           Previous
         </button>
         <button
           className="App__Button--record Button--primary"
-          disabled={isPlaying}
+          disabled={!isPaused}
           onClick={this.downloadButtonOnClick}
         >
           Download
         </button>
         <button
           className="App__Button--next Button--secondary"
-          disabled={!(selectedIndex < fileNames.length - 1 && !isPlaying)}
+          disabled={!(selectedIndex < fileNames.length - 1 && isPaused)}
           onClick={this.nextFileButtonOnClick}
         >
           Next
@@ -362,6 +362,10 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   spectrogramOnClick(e: React.MouseEvent): void {
+    if (this.state.playedSegmentInMs !== undefined) {
+      return;
+    }
+
     const canvas = this.spectrogramRef.current;
     if (canvas === null) {
       return;
@@ -382,10 +386,6 @@ export class App extends React.Component<AppProps, AppState> {
     e: { clientX: number },
     canvas: HTMLCanvasElement
   ): void {
-    if (this.state.playedSegmentInMs !== undefined) {
-      return;
-    }
-
     const rect = canvas.getBoundingClientRect();
     const unitX = (e.clientX - rect.left) / rect.width;
     const { selectedEntryIndex } = this.state;

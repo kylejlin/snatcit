@@ -84,7 +84,6 @@ export interface AppState {
    * React bugs.
    * */
   readonly volume: number;
-  readonly isPlaying: boolean;
   readonly selectedEntryIndex: number;
   readonly selectedProvidedFieldName: undefined | string;
   readonly isFieldInputFocused: boolean;
