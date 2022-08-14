@@ -4,6 +4,8 @@ import { hasDuplicate } from "./misc";
 
 const SNATCIT_CONFIG_JSON_KEYS = {
   creationDateString: "creation_date",
+  fileToSnapauMap: "file_to_snapau_map",
+  unrecognizedFileReaction: "unrecognized_file_reaction",
   spectrogram: "spectrogram",
   providedFieldNames: "provided_field_names",
   derivedFields: "derived_fields",
@@ -45,8 +47,20 @@ export function getConfigFileNameFromSuffix(
   return `snatcit_${suffix}.json`;
 }
 
+export const ALL_UNRECOGNIZE_FILE_REACTIONS = [
+  "ignore",
+  "map_to_single_snapau_of_same_name",
+  "error",
+] as const;
+export type UnrecognizedFileReaction =
+  typeof ALL_UNRECOGNIZE_FILE_REACTIONS[number];
+
 export interface SnatcitConfig {
   readonly creationDate: Date;
+  readonly fileToSnapauMap: {
+    readonly [realFileName: string]: undefined | string;
+  };
+  readonly unrecognizedFileReaction: UnrecognizedFileReaction;
   readonly spectrogram: {
     readonly idealBinSizeInHz: number;
     readonly idealMaxFrequencyInHz: number;
@@ -101,6 +115,9 @@ export function parseConfig(
     const creationDate = new Date(
       json[SNATCIT_CONFIG_JSON_KEYS.creationDateString]
     );
+    const fileToSnapauMap = json[SNATCIT_CONFIG_JSON_KEYS.fileToSnapauMap];
+    const unrecognizedFileReaction =
+      json[SNATCIT_CONFIG_JSON_KEYS.unrecognizedFileReaction];
     const spectrogram = {
       idealBinSizeInHz:
         json[SNATCIT_CONFIG_JSON_KEYS.spectrogram][
@@ -154,6 +171,20 @@ export function parseConfig(
 
     if (
       !Number.isNaN(creationDate.getTime()) &&
+      typeof fileToSnapauMap === "object" &&
+      fileToSnapauMap !== null &&
+      !Array.isArray(fileToSnapauMap) &&
+      Object.values(fileToSnapauMap).every(
+        (virtualFileNamesArr: any) =>
+          virtualFileNamesArr.every(
+            (virtualFileName: unknown) => typeof virtualFileName === "string"
+          ) as boolean
+      ) &&
+      !hasDuplicate<string>(
+        Object.values<string>(fileToSnapauMap).flat(),
+        (a, b) => a === b
+      ) &&
+      ALL_UNRECOGNIZE_FILE_REACTIONS.includes(unrecognizedFileReaction) &&
       typeof spectrogram.idealBinSizeInHz === "number" &&
       typeof spectrogram.idealMaxFrequencyInHz === "number" &&
       typeof spectrogram.idealWindowSizeInMs === "number" &&
@@ -193,6 +224,8 @@ export function parseConfig(
         error: undefined,
         config: {
           creationDate,
+          fileToSnapauMap,
+          unrecognizedFileReaction,
           spectrogram,
           providedFieldNames,
           derivedFields,
@@ -242,6 +275,9 @@ export function stringifyConfig(config: SnatcitConfig): string {
     {
       [SNATCIT_CONFIG_JSON_KEYS.creationDateString]:
         config.creationDate.toISOString(),
+      [SNATCIT_CONFIG_JSON_KEYS.fileToSnapauMap]: config.fileToSnapauMap,
+      [SNATCIT_CONFIG_JSON_KEYS.unrecognizedFileReaction]:
+        config.unrecognizedFileReaction,
       [SNATCIT_CONFIG_JSON_KEYS.spectrogram]: {
         [SNATCIT_CONFIG_JSON_KEYS.spectrogramKeys.idealBinSizeInHz]:
           config.spectrogram.idealBinSizeInHz,

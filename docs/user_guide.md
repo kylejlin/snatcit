@@ -1,17 +1,57 @@
 # Snatcit User Guide
 
+## Core Concepts
+
+> Note: If you are impatient, you can skip this section and head straight to the [Getting Started section](#getting-started). However, it is highly recommended that you read this section first, so you will understand the terminology used in [Getting Started section](#getting-started).
+
+### Snatcit's Purpose
+
+Sometimes, we have an audio file, and we want to identify which time ranges in that file correspond to certain audio features.
+
+#### Why do we care about audio feature time ranges?
+
+> You can skip this section if you already understand the motivation for
+> identifying audio feature time ranges (e.g., you know what UTAU's `oto.ini` is).
+
+There are many possible motivations, but I will provide one example.
+Suppose we're building a voicebank for use in a singing voice synthesizer.
+
+> For those that don't know, a voicebank is basically a collection of syllables that can be pitch-corrected and strung together in order to synthesize a song.
+
+Suppose we have a recording of someone saying "law lee lieu lay low".
+We may want to take this file and split it into useful features.
+For example, the most obvious feature to identify would probably be the syllable (i.e., one for "law", one for "lee", etc.).
+
+Furthermore, we may want to further divide those features (e.g., syllables) into sub-features (e.g., we could split "law" into the consonant "l" and vowel "aw").
+
+> In the English-speaking [UTAU](https://en.wikipedia.org/wiki/Utau) community, this is sometimes called "oto-ing".
+
+Now, you _could_ open your favorite audio editor (e.g., Audacity), select a playback range, play it, adjust the range a little, repeat until you get the correct range, type the time values into a file (e.g., `oto.ini`), and then repeat for each feature.
+
+However, having to manually type the time values into a file becomes extremely tedious if you're working with large datasets.
+Furthermore, having to open and close each file might be a pain (depending on what audio editor you're using).
+
+Snatcit aims to solve this. With Snatcit, you just need to upload all the files at the start, and then set the playback ranges. Snatcit will record the data in an output file (which you can download any time you want), so you don't have to worry about that.
+
+### Terminology
+
+- The top-level audio feature is called a _snapau_ (rhymes with "saw cow").
+  In the UTAU community, this may be called a "phone". However, Snatcit is designed as a general-purpose feature labeler (although realistically, the primary use will probably be for oto-ing), so we avoid the use of the word "phone".
+  > Optional etymology section: "snapau" roughly translates to "sound part" in Lojban.
+- The subfeatures are called _segments_. Each snapau is partitioned into one or more segments.
+- A `snatcit.json` file is any JSON file that has a name starting with `snatcit` and no periods (except for the period in `.json`).
+  For example, `snatcit.json`, `snatcit_1.json`, and `snatcit (2).json` are all legal names for `snatcit.json` files. These files are used to configure Snatcit. The important thing to take away from this bullet is that a so-called `snatcit.json` file does **NOT** need to be named `snatcit.json`, verbatim. Instead, it can have any name that follows the rule listed above.
+
 ## Getting Started
 
 ### Part 1. Configure and launch
 
-1. Download one or more config files and one or more audio files. A sample of each can be found in [this directory](../samples/).
-   - A _config file_ is any JSON file that has a name starting with `snatcit` and no periods (except for the period in `.json`).
-     For example, `snatcit.json`, `snatcit_1.json`, and `snatcit (2).json` are all legal names for config files.
-   - The web app refers to config files as `snatcit.json` files, so we will too, from this point forward. Just remember that what we call a `snatcit.json` file doesn't actually need to be named `snatcit.json`.
-2. Open [https://kylejlin.github.io/snatcit](https://kylejlin.github.io/snatcit).
-3. Click the "Upload Files" button.
-4. Select the `snatcit.json` files and the audio files.
-5. Click the "Launch" button.
+1. (Optional but highly recommended) Read the [Core Concepts section](#core-concepts) of this guide. If you skip it, you may not understand all the terminology used below.
+2. Download one or more `snatcit.json` files and one or more audio files. A sample of each can be found in [this directory](../samples/).
+3. Open [https://kylejlin.github.io/snatcit](https://kylejlin.github.io/snatcit).
+4. Click the "Upload Files" button.
+5. Select the `snatcit.json` files and the audio files.
+6. Click the "Launch" button.
 
 ### Part 2. Record
 
@@ -25,7 +65,7 @@
 3. Play audio:
    1. Make sure no field is selected. If a field is currently selected, you can unselect it by clicking anywhere in the field box except the input box (e.g., the field label).
    2. If you click on the spectrogram while no field is selected, the audio segment that you clicked on will be played. This is how you check your work (i.e., how you verify that you partitioned the audio into the desired segments).
-4. Use the "Previous" and "Next" buttons to navigate to the previous/next audio file.
+4. Use the "Previous" and "Next" buttons to navigate to the previous/next snapau.
 5. When you want to save your progress, you can click the "Download" button. A `snatcit.json` file will be saved.
 
 ## Customizing `snatcit.json`
@@ -35,6 +75,10 @@ Let's look at a sample `snatcit.json` file.
 ```json
 {
   "creation_date": "2022-08-11T22:33:40.282Z",
+  "file_to_snapau_map": {
+    "new_york_city.wav": ["new.wav", "york.wav", "city.wav"]
+  },
+  "unrecognized_file_reaction": "map_to_single_snapau_of_same_name",
   "spectrogram": {
     "ideal_bin_size_in_hz": 50,
     "ideal_max_frequency_in_hz": 8000,
@@ -77,6 +121,8 @@ milliseconds relative to the start of the audio file.
 | Field                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Examples                                                                                                                               |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `creation_date`                         | The date the file was created. This is an ISO date string.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `"2022-08-11T22:33:40.282Z"`                                                                                                           |
+| `file_to_snapau_map`                    | An object mapping audio files to snapau.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `{ "new_york_city.wav": ["new.wav", "york.wav", "city.wav"] }`                                                                         |
+| `unrecognized_file_reaction`            | A string specifying how to handle files whose names do not appear in the `file_to_selpau_map`. There are 3 options: `"ignore"`, `"error"`, and `"map_to_single_snapau_of_same_name"`. `"ignore"` will ignore the unrecognized files. `"error"` will prevent you from launching until the unrecognized files are deleted. `"map_to_single_snapau_of_same_name"` will create a snapau with the same name as the unrecognized file.                                                                                                                                                                                                                                                                                                                                                           | `"map_to_single_snapau_of_same_name"`                                                                                                  |
 | `spectrogram.ideal_bin_size_in_hz`      | The ideal frequency bin size in Hertz.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | `50`                                                                                                                                   |
 | `spectrogram.ideal_max_frequency_in_hz` | The ideal upper bound of the spectrogram frequency range in Hertz (the lower bound is always zero).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `8000`                                                                                                                                 |
 | `spectrogram.ideal_window_size_in_ms`   | The ideal spectrogram time window size in milliseconds.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `25`                                                                                                                                   |
