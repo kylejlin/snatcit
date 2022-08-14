@@ -32,7 +32,7 @@ const SNATCIT_CONFIG_JSON_KEYS = {
 export const CONFIG_FILE_DEFAULT_NAME = getConfigFileNameFromSuffix(undefined);
 
 export function isConfigFileName(fileName: string): boolean {
-  return /^snatcit(?:_\d+)?\.json$/i.test(fileName);
+  return /^snatcit(?:_\d+)?(?:\s*\(\d+\)\s*)*\.json$/i.test(fileName);
 }
 
 export function getConfigFileNameFromSuffix(
