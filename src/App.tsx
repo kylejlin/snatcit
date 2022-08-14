@@ -9,13 +9,12 @@ import {
   stringifyConfig,
   updateConfig,
 } from "./config";
+import { renderSpectrogram } from "./canvas/renderSpectrogram";
 import {
+  getSpectrumFftData,
   RenderConfig,
-  renderMarkings,
-  renderPlayedSegmentOverlayIfPossible,
-  renderSpectrogram,
-} from "./canvas/renderSpectrogramAndMarkings";
-import { getSpectrumFftData, SpectrumFftData } from "./canvas/calculationUtils";
+  SpectrumFftData,
+} from "./canvas/calculationUtils";
 import { base64FromUnicode } from "./lib/base64";
 import {
   getAttributeFromNearestAncestor,
@@ -23,6 +22,8 @@ import {
   noOp,
   toLowerCaseIfString,
 } from "./misc";
+import { renderPlayedSegmentOverlayIfPossible } from "./canvas/renderPlayedSegmentOverlay";
+import { renderMarkings } from "./canvas/renderMarkings";
 
 export class App extends React.Component<AppProps, AppState> {
   private spectrogramRef: React.RefObject<HTMLCanvasElement>;

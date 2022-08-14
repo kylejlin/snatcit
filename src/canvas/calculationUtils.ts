@@ -1,6 +1,15 @@
 import { SnatcitConfig } from "../config";
 import { roundUpToPowerOf2 } from "../misc";
 
+export interface RenderConfig {
+  fileIndex: number;
+  ctx: CanvasRenderingContext2D;
+  audioCtx: AudioContext;
+  audioBuffer: AudioBuffer;
+  snatcitConfig: SnatcitConfig;
+  playedSegmentInMs: undefined | readonly [number, number];
+}
+
 export interface SpectrumFftData {
   readonly fftInputLength: number;
   readonly fractionalFftBinsPerSpectrumBin: number;

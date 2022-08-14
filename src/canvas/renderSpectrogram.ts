@@ -1,4 +1,3 @@
-import { LabeledFieldValue, SnatcitConfig } from "../config";
 import Fft from "fft.js";
 import {
   rgbTupleToCssFillStyle,
@@ -9,7 +8,7 @@ import {
   copyChannelAverageInto,
   writeColor,
   getSpectrogramRenderData,
-  rgbaTupleToCssFillStyle,
+  RenderConfig,
 } from "./calculationUtils";
 
 /**
@@ -20,15 +19,6 @@ import {
  * which would make the maximum magnitude be the square root of 2.
  */
 const MAX_MAGNITUDE = Math.SQRT2;
-
-export interface RenderConfig {
-  fileIndex: number;
-  ctx: CanvasRenderingContext2D;
-  audioCtx: AudioContext;
-  audioBuffer: AudioBuffer;
-  snatcitConfig: SnatcitConfig;
-  playedSegmentInMs: undefined | readonly [number, number];
-}
 
 export function renderSpectrogram(renderConfig: RenderConfig): void {
   renderBackground(renderConfig);
@@ -134,83 +124,4 @@ function renderSpectra(
       ctx.putImageData(imgData, windowCanvasLeft + i, 0);
     }
   }
-}
-
-export function renderPlayedSegmentOverlayIfPossible(
-  renderConfig: RenderConfig
-): void {
-  const {
-    ctx,
-    audioBuffer,
-    snatcitConfig,
-    playedSegmentInMs: playedSegment,
-  } = renderConfig;
-  if (playedSegment === undefined) {
-    return;
-  }
-
-  const { width: canvasWidth, height: canvasHeight } = ctx.canvas;
-  const audioBufferDurationInMs = audioBuffer.duration * 1e3;
-  const unclampedStartFactor = playedSegment[0] / audioBufferDurationInMs;
-  const clampedStartFactor = Math.max(0, Math.min(unclampedStartFactor, 1));
-  const startX = Math.min(canvasWidth, clampedStartFactor * canvasWidth);
-
-  const unclampedWidthFactor =
-    (playedSegment[1] - playedSegment[0]) / audioBufferDurationInMs;
-  const clampedWidthFactor = Math.max(0, Math.min(unclampedWidthFactor, 1));
-  const width = Math.floor(clampedWidthFactor * canvasWidth);
-
-  const { playedSegmentColor } = snatcitConfig;
-
-  hackToCircumventWeirdChromeBug__clearCanvasOfMysteriousCurse(ctx);
-
-  ctx.fillStyle = rgbaTupleToCssFillStyle(playedSegmentColor);
-  ctx.fillRect(startX, 0, width, canvasHeight);
-}
-
-export function renderMarkings(
-  renderConfig: RenderConfig,
-  computedValues: readonly LabeledFieldValue[]
-): void {
-  const { ctx, audioBuffer, snatcitConfig } = renderConfig;
-  const { width: canvasWidth, height: canvasHeight } = ctx.canvas;
-  const audioBufferDurationInMs = audioBuffer.duration * 1e3;
-  for (let i = 0; i < computedValues.length; ++i) {
-    const { fieldName, value } = computedValues[i];
-    const unclamped = value / audioBufferDurationInMs;
-    const clamped = Math.max(0, Math.min(unclamped, 1));
-    const x = Math.min(canvasWidth, clamped * canvasWidth);
-    const fieldColor = snatcitConfig.fieldColors[fieldName];
-    if (fieldColor === undefined) {
-      throw new Error("Cannot find color for field " + fieldName);
-    }
-
-    hackToCircumventWeirdChromeBug__clearCanvasOfMysteriousCurse(ctx);
-
-    ctx.fillStyle = rgbTupleToCssFillStyle(fieldColor);
-    ctx.fillRect(x, 0, 1, canvasHeight);
-  }
-}
-
-// There's a weird bug in Chrome that causes the canvas to be cleared
-// if you call `fillRect` after calling `putImageData` using image data
-// from another canvas.
-// I would file a bug report, except I don't have the time to find a minimum
-// working example.
-// The bug seems really mysterious, which makes me think it will not be
-// easy to find the exact circumstances in which it occurs.
-// The bug does not occur when we use fresh image data, but it does occur
-// when we used cached image data.
-// At first, I thought it was a bug in our code, not Chrome.
-// However, I tested it with Safari, and it worked fine (without calling
-// this hack function), so it's clearly a problem with Chrome.
-//
-// Anyhow, I'm putting this in here for now, since I don't have time to
-// find a better solution.
-// If Chrome fixes this in a future version, we can remove it.
-function hackToCircumventWeirdChromeBug__clearCanvasOfMysteriousCurse(
-  ctx: CanvasRenderingContext2D
-): void {
-  const { width: canvasWidth, height: canvasHeight } = ctx.canvas;
-  ctx.putImageData(ctx.getImageData(0, 0, canvasWidth, canvasHeight), 0, 0);
 }
