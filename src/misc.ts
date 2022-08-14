@@ -86,3 +86,11 @@ export function getAttributeFromNearestAncestor(
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 export function noOp(): void {}
+
+export function toLowerCaseIfString<T = unknown>(x: T): T {
+  if (typeof x === "string") {
+    return x.toLowerCase() as unknown as T;
+  } else {
+    return x;
+  }
+}

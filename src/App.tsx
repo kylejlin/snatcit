@@ -16,7 +16,11 @@ import {
 } from "./canvas/renderSpectrogramAndMarkings";
 import { getSpectrumFftData, SpectrumFftData } from "./canvas/calculationUtils";
 import { base64FromUnicode } from "./lib/base64";
-import { getAttributeFromNearestAncestor, noOp } from "./misc";
+import {
+  getAttributeFromNearestAncestor,
+  noOp,
+  toLowerCaseIfString,
+} from "./misc";
 
 export class App extends React.Component<AppProps, AppState> {
   private spectrogramRef: React.RefObject<HTMLCanvasElement>;
@@ -275,7 +279,8 @@ export class App extends React.Component<AppProps, AppState> {
       throw new Error("A provided field was uncomputable.");
     }
 
-    const wasInputClicked = (event.target as any)?.tagName === "INPUT";
+    const wasInputClicked =
+      toLowerCaseIfString((event.target as any)?.tagName) === "input";
     if (wasInputClicked) {
       this.setState({
         selectedProvidedFieldName: fieldName,
