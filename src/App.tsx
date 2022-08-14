@@ -16,6 +16,7 @@ import {
 } from "./canvas/renderSpectrogramAndMarkings";
 import { getSpectrumFftData, SpectrumFftData } from "./canvas/calculationUtils";
 import { base64FromUnicode } from "./lib/base64";
+import { getAttributeFromNearestAncestor, noOp } from "./misc";
 
 export class App extends React.Component<AppProps, AppState> {
   private spectrogramRef: React.RefObject<HTMLCanvasElement>;
@@ -34,7 +35,8 @@ export class App extends React.Component<AppProps, AppState> {
     this.nextFileButtonOnClick = this.nextFileButtonOnClick.bind(this);
     this.downloadButtonOnClick = this.downloadButtonOnClick.bind(this);
     this.volumeSliderOnChange = this.volumeSliderOnChange.bind(this);
-    this.fieldValueInputOnFocus = this.fieldValueInputOnFocus.bind(this);
+    this.fieldTableProvidedValueEntryOnClick =
+      this.fieldTableProvidedValueEntryOnClick.bind(this);
     this.fieldValueInputOnBlur = this.fieldValueInputOnBlur.bind(this);
     this.fieldValueInputOnChange = this.fieldValueInputOnChange.bind(this);
     this.spectrogramOnClick = this.spectrogramOnClick.bind(this);
@@ -68,6 +70,7 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   override componentDidMount(): void {
+    (window as any).app = this;
     this.requestCanvasUpdate();
     window.addEventListener("resize", this.windowOnResize);
   }
@@ -150,6 +153,12 @@ export class App extends React.Component<AppProps, AppState> {
                     : "")
                 }
                 key={fieldName}
+                data-field-name={fieldName}
+                onClick={
+                  providedFieldNames.includes(fieldName)
+                    ? this.fieldTableProvidedValueEntryOnClick
+                    : noOp
+                }
               >
                 <div className="FieldsTable__Entry__Label">{fieldName}:</div>
                 <div className="FieldsTable__Entry__Value">
@@ -164,7 +173,6 @@ export class App extends React.Component<AppProps, AppState> {
                           ? this.state.tentativeFieldValue
                           : entry.value
                       }
-                      onFocus={this.fieldValueInputOnFocus}
                       onBlur={this.fieldValueInputOnBlur}
                       onChange={this.fieldValueInputOnChange}
                     />
@@ -239,9 +247,14 @@ export class App extends React.Component<AppProps, AppState> {
     this.setState({ volume: clampedVolume });
   }
 
-  fieldValueInputOnFocus(event: React.FocusEvent<HTMLInputElement>): void {
-    const fieldName = event.target.getAttribute("data-field-name");
-    if (fieldName === null) {
+  fieldTableProvidedValueEntryOnClick(
+    event: React.MouseEvent<HTMLDivElement>
+  ): void {
+    const fieldName: undefined | string = getAttributeFromNearestAncestor(
+      event.target,
+      "data-field-name"
+    );
+    if (fieldName === undefined) {
       throw new Error(
         "fieldValueInputOnFocus was called with an event with an input element without a data-field-name attribute."
       );
@@ -262,11 +275,22 @@ export class App extends React.Component<AppProps, AppState> {
       throw new Error("A provided field was uncomputable.");
     }
 
-    this.setState({
-      selectedProvidedFieldName: fieldName,
-      isFieldInputFocused: true,
-      tentativeFieldValue: String(fieldEntry.value),
-    });
+    const wasInputClicked = (event.target as any)?.tagName === "INPUT";
+    if (wasInputClicked) {
+      this.setState({
+        selectedProvidedFieldName: fieldName,
+        isFieldInputFocused: true,
+        tentativeFieldValue: String(fieldEntry.value),
+      });
+    } else {
+      this.setState({
+        selectedProvidedFieldName:
+          this.state.selectedProvidedFieldName === fieldName
+            ? undefined
+            : fieldName,
+        isFieldInputFocused: false,
+      });
+    }
   }
 
   fieldValueInputOnBlur(): void {

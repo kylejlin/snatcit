@@ -61,6 +61,10 @@ export class Wrapper extends React.Component<WrapperProps, WrapperState> {
     }
   }
 
+  override componentDidMount(): void {
+    (window as any).appWrapper = this;
+  }
+
   renderUnsupportedBrowserMenu(): React.ReactElement {
     return (
       <div className="Wrapper Wrapper--unsupportedBrowser">

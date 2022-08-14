@@ -62,3 +62,27 @@ export function getArbitraryDuplicate<T>(
 export function roundUpToPowerOf2(n: number): number {
   return Math.pow(2, Math.ceil(Math.log2(n)));
 }
+
+export function getAttributeFromNearestAncestor(
+  element: unknown,
+  name: string
+): string | undefined {
+  if (!(element instanceof HTMLElement)) {
+    return;
+  }
+  let e: HTMLElement = element;
+  while (e !== null) {
+    const value = e.getAttribute(name);
+    if (value !== null) {
+      return value;
+    }
+    if (e.parentElement === null) {
+      return;
+    }
+    e = e.parentElement;
+  }
+  return undefined;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+export function noOp(): void {}
