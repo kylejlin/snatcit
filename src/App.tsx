@@ -333,6 +333,9 @@ export class App extends React.Component<AppProps, AppState> {
 
     const newTentativeFieldValue = event.target.value;
     const editedEntryIndex = this.state.selectedEntryIndex;
+
+    this.setState({ tentativeFieldValue: newTentativeFieldValue });
+
     this.getAudioData(editedEntryIndex, canvas.width).then((audioData) => {
       const durationInMs = audioData.audioBuffer.duration * 1e3;
       const parsedValue = Number(newTentativeFieldValue);
@@ -341,12 +344,16 @@ export class App extends React.Component<AppProps, AppState> {
         0 <= parsedValue &&
         parsedValue <= durationInMs;
       this.setState((prevState) => {
-        if (prevState.selectedEntryIndex !== editedEntryIndex) {
+        if (
+          !(
+            prevState.selectedEntryIndex === editedEntryIndex &&
+            prevState.tentativeFieldValue === newTentativeFieldValue
+          )
+        ) {
           return prevState;
         } else {
           return {
             ...prevState,
-            tentativeFieldValue: newTentativeFieldValue,
             config: isParsedValueValid
               ? updateConfig(
                   prevState.config,
