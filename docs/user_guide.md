@@ -83,7 +83,7 @@ Let's look at a sample `snatcit.json` file.
 {
   "creation_date": "2022-08-11T22:33:40.282Z",
   "file_to_snapau_map": {
-    "new_york_city.wav": ["new.wav", "york.wav", "city.wav"]
+    "new_york_city.wav": ["new", "york", "city"]
   },
   "unrecognized_file_reaction": "map_to_single_snapau_of_same_name",
   "spectrogram": {
@@ -128,7 +128,7 @@ milliseconds relative to the start of the audio file.
 | Field                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Examples                                                                                                                               |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `creation_date`                         | The date the file was created. This is an ISO date string.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `"2022-08-11T22:33:40.282Z"`                                                                                                           |
-| `file_to_snapau_map`                    | An object mapping audio files to snapau.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `{ "new_york_city.wav": ["new.wav", "york.wav", "city.wav"] }`                                                                         |
+| `file_to_snapau_map`                    | An object mapping audio files to snapau.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `{ "new_york_city.wav": ["new", "york", "city"] }`                                                                                     |
 | `unrecognized_file_reaction`            | A string specifying how to handle files whose names do not appear in the `file_to_selpau_map`. There are 3 options: `"ignore"`, `"error"`, and `"map_to_single_snapau_of_same_name"`. `"ignore"` will ignore the unrecognized files. `"error"` will prevent you from launching until the unrecognized files are deleted. `"map_to_single_snapau_of_same_name"` will create a snapau with the same name as the unrecognized file.                                                                                                                                                                                                                                                                                                                                                           | `"map_to_single_snapau_of_same_name"`                                                                                                  |
 | `spectrogram.ideal_bin_size_in_hz`      | The ideal frequency bin size in Hertz.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | `50`                                                                                                                                   |
 | `spectrogram.ideal_max_frequency_in_hz` | The ideal upper bound of the spectrogram frequency range in Hertz (the lower bound is always zero).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `8000`                                                                                                                                 |
@@ -157,7 +157,7 @@ milliseconds relative to the start of the audio file.
     // ...other fields omitted for brevity
     "entries": [
       {
-        "name": "(-ka)_ka_ke_ki_ko_ku.wav",
+        "name": "new",
         "provided_field_values": {
           "offset": 700,
           "preutterance": 1000,
@@ -166,7 +166,7 @@ milliseconds relative to the start of the audio file.
         }
       },
       {
-        "name": "-ka_(ka)_ke_ki_ko_ku.wav",
+        "name": "york",
         "provided_field_values": {
           "offset": 2200,
           "preutterance": 2400,
@@ -175,21 +175,12 @@ milliseconds relative to the start of the audio file.
         }
       },
       {
-        "name": "-ka_ka_(ke)_ki_ko_ku.wav",
+        "name": "city",
         "provided_field_values": {
           "offset": 3400,
           "preutterance": 3600,
           "fixed_region": 3900,
           "cutoff": 4100
-        }
-      },
-      {
-        "name": "-ka_ka_ke_(ki)_ko_ku.wav",
-        "provided_field_values": {
-          "offset": 5000,
-          "preutterance": 5100,
-          "fixed_region": 5400,
-          "cutoff": 6000
         }
       }
       // ...and so on...
