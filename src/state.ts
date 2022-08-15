@@ -95,5 +95,7 @@ export interface AppState {
   readonly isFieldInputFocused: boolean;
   readonly tentativeFieldValue: string;
   readonly playedSegmentInMs: undefined | readonly [number, number];
-  readonly config: SnatcitConfig;
+  /** `configHistory` must **always** be non-empty. */
+  readonly configHistory: readonly SnatcitConfig[];
+  readonly configRedoStack: readonly SnatcitConfig[];
 }

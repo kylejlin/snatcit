@@ -48,6 +48,7 @@ export class App extends React.Component<AppProps, AppState> {
     this.fieldValueInputOnChange = this.fieldValueInputOnChange.bind(this);
     this.spectrogramOnClick = this.spectrogramOnClick.bind(this);
     this.windowOnResize = this.windowOnResize.bind(this);
+    this.windowOnKeyUp = this.windowOnKeyUp.bind(this);
     this.requestCanvasUpdate = this.requestCanvasUpdate.bind(this);
     this.updateCanvas = this.updateCanvas.bind(this);
     this.renderSpectrogramUsingCache =
@@ -57,11 +58,12 @@ export class App extends React.Component<AppProps, AppState> {
     this.state = {
       volume: 1,
       selectedEntryIndex: 0,
-      config: this.props.initialConfig,
       selectedProvidedFieldName: undefined,
       isFieldInputFocused: false,
       tentativeFieldValue: "",
       playedSegmentInMs: undefined,
+      configHistory: [this.props.initialConfig],
+      configRedoStack: [],
     };
 
     this.spectrogramRef = React.createRef();
@@ -83,6 +85,7 @@ export class App extends React.Component<AppProps, AppState> {
 
     this.requestCanvasUpdate();
     window.addEventListener("resize", this.windowOnResize);
+    window.addEventListener("keyup", this.windowOnKeyUp, { passive: false });
   }
 
   override componentDidUpdate(): void {
@@ -91,17 +94,19 @@ export class App extends React.Component<AppProps, AppState> {
 
   override componentWillUnmount(): void {
     window.removeEventListener("resize", this.windowOnResize);
+    window.removeEventListener("keyup", this.windowOnKeyUp);
   }
 
   override render(): React.ReactElement {
     const snapauNames = this.props.snapauFileInfo.map((f) => f.snapauName);
-    const { selectedEntryIndex: selectedIndex, config } = this.state;
+    const { selectedEntryIndex: selectedIndex } = this.state;
+    const config = this.getConfig();
     const { providedFieldNames } = config;
     const allFieldNames = providedFieldNames.concat(
       config.derivedFields.map((f) => f.name)
     );
     const { computedValues } = getAllFieldValuesForEntry(
-      this.state.config,
+      config,
       this.props.snapauFileInfo[this.state.selectedEntryIndex].snapauName
     );
     const isPaused = this.state.playedSegmentInMs === undefined;
@@ -211,6 +216,15 @@ export class App extends React.Component<AppProps, AppState> {
     );
   }
 
+  getConfig(): SnatcitConfig {
+    const config =
+      this.state.configHistory[this.state.configHistory.length - 1];
+    if (config === undefined) {
+      throw new Error("Impossible: App.state.configHistory is empty.");
+    }
+    return config;
+  }
+
   previousFileButtonOnClick(): void {
     const previousIndex = Math.max(0, this.state.selectedEntryIndex - 1);
     this.setState(
@@ -236,7 +250,7 @@ export class App extends React.Component<AppProps, AppState> {
 
   downloadButtonOnClick(): void {
     const downloadedConfig: SnatcitConfig = {
-      ...this.state.config,
+      ...this.getConfig(),
       creationDate: new Date(),
     };
     const configString = stringifyConfig(downloadedConfig);
@@ -273,13 +287,14 @@ export class App extends React.Component<AppProps, AppState> {
         "fieldValueInputOnFocus was called with an event with an input element without a data-field-name attribute."
       );
     }
-    if (!this.state.config.providedFieldNames.includes(fieldName)) {
+    const config = this.getConfig();
+    if (!config.providedFieldNames.includes(fieldName)) {
       throw new Error(
         "The selected field name was not in the provided field names"
       );
     }
     const { computedValues } = getAllFieldValuesForEntry(
-      this.state.config,
+      config,
       this.props.snapauFileInfo[this.state.selectedEntryIndex].snapauName
     );
     const fieldEntry = computedValues.find(
@@ -321,7 +336,8 @@ export class App extends React.Component<AppProps, AppState> {
         "fieldValueInputOnChange was called with an event with an input element without a data-field-name attribute."
       );
     }
-    if (!this.state.config.providedFieldNames.includes(fieldName)) {
+    const config = this.getConfig();
+    if (!config.providedFieldNames.includes(fieldName)) {
       throw new Error(
         "The selected field name was not in the provided field names"
       );
@@ -347,21 +363,24 @@ export class App extends React.Component<AppProps, AppState> {
         if (
           !(
             prevState.selectedEntryIndex === editedEntryIndex &&
-            prevState.tentativeFieldValue === newTentativeFieldValue
+            prevState.tentativeFieldValue === newTentativeFieldValue &&
+            isParsedValueValid
           )
         ) {
           return prevState;
         } else {
+          const prevStateConfig =
+            prevState.configHistory[prevState.configHistory.length - 1];
+          const updatedConfig = updateConfig(
+            prevStateConfig,
+            this.props.snapauFileInfo[editedEntryIndex].snapauName,
+            fieldName,
+            parsedValue
+          );
           return {
             ...prevState,
-            config: isParsedValueValid
-              ? updateConfig(
-                  prevState.config,
-                  this.props.snapauFileInfo[editedEntryIndex].snapauName,
-                  fieldName,
-                  parsedValue
-                )
-              : prevState.config,
+            configHistory: prevState.configHistory.concat([updatedConfig]),
+            configRedoStack: [],
           };
         }
       });
@@ -407,7 +426,7 @@ export class App extends React.Component<AppProps, AppState> {
         Math.min(Math.floor(unitX * durationInMs), Math.floor(durationInMs))
       );
       const { computedValues } = getAllFieldValuesForEntry(
-        this.state.config,
+        this.getConfig(),
         this.props.snapauFileInfo[selectedEntryIndex].snapauName
       );
       const segmentInMs = getIntervalContaining(
@@ -458,14 +477,18 @@ export class App extends React.Component<AppProps, AppState> {
         if (prevState.selectedEntryIndex !== selectedEntryIndex) {
           return prevState;
         }
+        const prevStateConfig =
+          prevState.configHistory[prevState.configHistory.length - 1];
+        const updatedConfig = updateConfig(
+          prevStateConfig,
+          this.props.snapauFileInfo[selectedEntryIndex].snapauName,
+          selectedProvidedFieldName,
+          timeInMs
+        );
         return {
           ...prevState,
-          config: updateConfig(
-            prevState.config,
-            this.props.snapauFileInfo[selectedEntryIndex].snapauName,
-            selectedProvidedFieldName,
-            timeInMs
-          ),
+          configHistory: prevState.configHistory.concat([updatedConfig]),
+          configRedoStack: [],
         };
       });
     });
@@ -474,6 +497,51 @@ export class App extends React.Component<AppProps, AppState> {
   windowOnResize(): void {
     this.spectrogramImageDataCache = {};
     this.requestCanvasUpdate();
+  }
+
+  windowOnKeyUp(event: KeyboardEvent): void {
+    if (event.key === "z" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      this.undoConfigEditIfPossible();
+      return;
+    }
+    if (event.key === "Z" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      this.redoConfigEditIfPossible();
+      return;
+    }
+  }
+
+  undoConfigEditIfPossible(): void {
+    this.setState((prevState) => {
+      if (prevState.configHistory.length >= 2) {
+        const topConfig =
+          prevState.configHistory[prevState.configHistory.length - 1];
+        return {
+          ...prevState,
+          configHistory: prevState.configHistory.slice(0, -1),
+          configRedoStack: prevState.configRedoStack.concat([topConfig]),
+        };
+      } else {
+        return prevState;
+      }
+    });
+  }
+
+  redoConfigEditIfPossible(): void {
+    this.setState((prevState) => {
+      if (prevState.configRedoStack.length >= 1) {
+        const topConfig =
+          prevState.configRedoStack[prevState.configRedoStack.length - 1];
+        return {
+          ...prevState,
+          configHistory: prevState.configHistory.concat([topConfig]),
+          configRedoStack: prevState.configRedoStack.slice(0, -1),
+        };
+      } else {
+        return prevState;
+      }
+    });
   }
 
   getAudioData(index: number, canvasWidth: number): Promise<AudioData> {
@@ -489,7 +557,7 @@ export class App extends React.Component<AppProps, AppState> {
           const spectrumData = getSpectrumFftData({
             canvasWidth,
             audioBuffer,
-            snatcitConfig: this.state.config,
+            snatcitConfig: this.getConfig(),
           });
 
           const data: AudioData = {
@@ -525,7 +593,7 @@ export class App extends React.Component<AppProps, AppState> {
           ctx: internalCanvasCtx,
           audioCtx: this.audioCtx,
           audioBuffer,
-          snatcitConfig: this.state.config,
+          snatcitConfig: this.getConfig(),
           playedSegmentInMs: this.state.playedSegmentInMs,
         });
 
@@ -603,7 +671,7 @@ export class App extends React.Component<AppProps, AppState> {
     const ctx = canvas.getContext("2d")!;
 
     const { computedValues } = getAllFieldValuesForEntry(
-      this.state.config,
+      this.getConfig(),
       this.props.snapauFileInfo[this.state.selectedEntryIndex].snapauName
     );
     return this.getAudioData(this.state.selectedEntryIndex, canvas.width).then(
@@ -613,7 +681,7 @@ export class App extends React.Component<AppProps, AppState> {
           ctx,
           audioCtx: this.audioCtx,
           audioBuffer: audioData.audioBuffer,
-          snatcitConfig: this.state.config,
+          snatcitConfig: this.getConfig(),
           playedSegmentInMs: this.state.playedSegmentInMs,
         };
         function f(i: number): Promise<void> {
