@@ -47,8 +47,7 @@ Snatcit aims to solve this. With Snatcit, you just need to upload all the files 
   - _Derived fields_ - These are automatically computed from other field values. The user cannot set these manually.
 
 - Each field has exactly one _field value_. As previously stated, field values represent the borders of segments. For example, if I had a file that was `2000` milliseconds, and the field values `[500, 800, 1700]`, then the segments would be the intervals `[0, 500)`, `[500, 800)`, `[800, 1700)`, and `[1700, 2000]`.
-- A `snatcit.json` file is any JSON file that has a name starting with `snatcit` and no periods (except for the period in `.json`).
-  For example, `snatcit.json`, `snatcit_1.json`, and `snatcit (2).json` are all legal names for `snatcit.json` files. These files are used to configure Snatcit. The important thing to take away from this bullet is that a so-called `snatcit.json` file does **NOT** need to be named `snatcit.json`, verbatim. Instead, it can have any name that follows the rule listed above.
+- A `snatcit.json` file is any JSON file that has a name the starts with `snatcit` and ends with `.json`. To clarify, what we refer to as a "`snatcit.json` file" does **NOT** need to actually be named `snatcit.json`--the name just needs to start with `snatcit` and end with `.json`. These files are config files for Snatcit.
 
 ## Getting Started
 
