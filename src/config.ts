@@ -383,7 +383,8 @@ export function updateConfig(
   config: SnatcitConfig,
   snapauName: string,
   providedFieldName: string,
-  value: number
+  value: number,
+  isDistancePreservationOverridden: boolean
 ): SnatcitConfig {
   const existingEntry = config.entries.find(
     (entry) => entry.name === snapauName
@@ -408,7 +409,9 @@ export function updateConfig(
   }
   const principalValueChange = value - previousPrincipalValue;
   const namesOfFieldsCollaterallyUpdatedByPrincipalUpdate =
-    config.preserveDistance[providedFieldName] ?? [];
+    isDistancePreservationOverridden
+      ? []
+      : config.preserveDistance[providedFieldName] ?? [];
   const triggeredUpdates: [string, number][] =
     namesOfFieldsCollaterallyUpdatedByPrincipalUpdate.map(
       (collateralFieldName) => {

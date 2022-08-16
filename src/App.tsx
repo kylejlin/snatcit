@@ -48,6 +48,7 @@ export class App extends React.Component<AppProps, AppState> {
     this.fieldValueInputOnChange = this.fieldValueInputOnChange.bind(this);
     this.spectrogramOnClick = this.spectrogramOnClick.bind(this);
     this.windowOnResize = this.windowOnResize.bind(this);
+    this.windowOnKeyDown = this.windowOnKeyDown.bind(this);
     this.windowOnKeyUp = this.windowOnKeyUp.bind(this);
     this.requestCanvasUpdate = this.requestCanvasUpdate.bind(this);
     this.updateCanvas = this.updateCanvas.bind(this);
@@ -64,6 +65,8 @@ export class App extends React.Component<AppProps, AppState> {
       playedSegmentInMs: undefined,
       configHistory: [this.props.initialConfig],
       configRedoStack: [],
+      isPlayOnClickForced: false,
+      isDistancePreservationOverridden: false,
     };
 
     this.spectrogramRef = React.createRef();
@@ -85,7 +88,10 @@ export class App extends React.Component<AppProps, AppState> {
 
     this.requestCanvasUpdate();
     window.addEventListener("resize", this.windowOnResize);
-    window.addEventListener("keyup", this.windowOnKeyUp, { passive: false });
+    window.addEventListener("keydown", this.windowOnKeyDown, {
+      passive: false,
+    });
+    window.addEventListener("keyup", this.windowOnKeyUp);
   }
 
   override componentDidUpdate(): void {
@@ -94,6 +100,7 @@ export class App extends React.Component<AppProps, AppState> {
 
   override componentWillUnmount(): void {
     window.removeEventListener("resize", this.windowOnResize);
+    window.addEventListener("keydown", this.windowOnKeyDown);
     window.removeEventListener("keyup", this.windowOnKeyUp);
   }
 
@@ -375,7 +382,8 @@ export class App extends React.Component<AppProps, AppState> {
             prevStateConfig,
             this.props.snapauFileInfo[editedEntryIndex].snapauName,
             fieldName,
-            parsedValue
+            parsedValue,
+            this.state.isDistancePreservationOverridden
           );
           return {
             ...prevState,
@@ -396,15 +404,15 @@ export class App extends React.Component<AppProps, AppState> {
     if (canvas === null) {
       return;
     }
-    const { selectedProvidedFieldName } = this.state;
-    if (selectedProvidedFieldName === undefined) {
-      this.playAudioSegmentBasedOnMousePosition(e, canvas);
-    } else {
+    const { selectedProvidedFieldName, isPlayOnClickForced } = this.state;
+    if (selectedProvidedFieldName !== undefined && !isPlayOnClickForced) {
       this.setFieldValueBasedOnMousePosition(
         e,
         canvas,
         selectedProvidedFieldName
       );
+    } else {
+      this.playAudioSegmentBasedOnMousePosition(e, canvas);
     }
   }
 
@@ -483,7 +491,8 @@ export class App extends React.Component<AppProps, AppState> {
           prevStateConfig,
           this.props.snapauFileInfo[selectedEntryIndex].snapauName,
           selectedProvidedFieldName,
-          timeInMs
+          timeInMs,
+          this.state.isDistancePreservationOverridden
         );
         return {
           ...prevState,
@@ -499,15 +508,36 @@ export class App extends React.Component<AppProps, AppState> {
     this.requestCanvasUpdate();
   }
 
-  windowOnKeyUp(event: KeyboardEvent): void {
-    if (event.key === "z" && (event.ctrlKey || event.metaKey)) {
+  windowOnKeyDown(event: KeyboardEvent): void {
+    if (isUndoEvent(event) || isRedoEvent(event)) {
       event.preventDefault();
+      return;
+    }
+    if (isForcePlayOnClickKey(event)) {
+      this.setState({ isPlayOnClickForced: true });
+      return;
+    }
+    if (isOverrideDistancePreservationKey(event)) {
+      this.setState({ isDistancePreservationOverridden: true });
+      return;
+    }
+  }
+
+  windowOnKeyUp(event: KeyboardEvent): void {
+    if (isUndoEvent(event)) {
       this.undoConfigEditIfPossible();
       return;
     }
-    if (event.key === "Z" && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault();
+    if (isRedoEvent(event)) {
       this.redoConfigEditIfPossible();
+      return;
+    }
+    if (isForcePlayOnClickKey(event)) {
+      this.setState({ isPlayOnClickForced: false });
+      return;
+    }
+    if (isOverrideDistancePreservationKey(event)) {
+      this.setState({ isDistancePreservationOverridden: false });
       return;
     }
   }
@@ -716,4 +746,24 @@ function getNextAvailableDownloadFilename(
       return proposal;
     }
   }
+}
+
+function isUndoEvent(event: KeyboardEvent): boolean {
+  return (
+    (event.key === "z" || event.key === "u") && (event.ctrlKey || event.metaKey)
+  );
+}
+
+function isRedoEvent(event: KeyboardEvent): boolean {
+  return (
+    (event.key === "Z" || event.key === "y") && (event.ctrlKey || event.metaKey)
+  );
+}
+
+function isForcePlayOnClickKey(event: KeyboardEvent): boolean {
+  return event.key === "f";
+}
+
+function isOverrideDistancePreservationKey(event: KeyboardEvent): boolean {
+  return event.key === "d";
 }

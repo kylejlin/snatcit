@@ -98,4 +98,6 @@ export interface AppState {
   /** `configHistory` must **always** be non-empty. */
   readonly configHistory: readonly SnatcitConfig[];
   readonly configRedoStack: readonly SnatcitConfig[];
+  readonly isPlayOnClickForced: boolean;
+  readonly isDistancePreservationOverridden: boolean;
 }
