@@ -60,7 +60,7 @@ Snatcit aims to solve this. With Snatcit, you just need to upload all the files 
 5. Select the `snatcit.json` files and the audio files.
 6. Click the "Launch" button.
 
-### Part 2. Identify
+### Part 2. Set fields
 
 1. Click on one of the input boxes under the "Fields" heading.
    1. Type in the desired value for the field. The value is given in milliseconds (from the start of the audio file).
@@ -74,6 +74,15 @@ Snatcit aims to solve this. With Snatcit, you just need to upload all the files 
    2. If you click on the spectrogram while no field is selected, the audio segment that you clicked on will be played. This is how you check your work (i.e., how you verify that you partitioned the audio into the desired segments).
 4. Use the "Previous" and "Next" buttons to navigate to the previous/next snapau.
 5. When you want to save your progress, you can click the "Download" button. A `snatcit.json` file will be saved.
+
+## Useful Key Commands
+
+- Press `Cmd/Ctrl + z`: Undo
+  - Alternatively, `Cmd/Ctrl + u` will do the same thing (i.e., undo).
+- Press `Cmd/Ctrl + Shift + Z`: Redo
+  - Alternatively, `Cmd/Ctrl + y` will do the same thing (i.e., redo).
+- Click on spectrogram while holding down `f`: Force play-on-click. Normally, if you click on the spectrogram while a field is selected, Snatcit will set the selected field's value to the mouse position. However, if `f` is held while you click, then Snatcit will play the audio segment underneath the mouse (just like if there was no field selected).
+- Click on spectrogram while holding down `d`: Override distance preservation. This will make Snatcit ignore the `preserve_distance` field of `snatcit.json`, and set the selected field's value as if `preserve_distance` was omitted.
 
 ## Customizing `snatcit.json`
 
