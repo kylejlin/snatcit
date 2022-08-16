@@ -10,6 +10,7 @@ const SNATCIT_CONFIG_JSON_KEYS = {
   providedFieldNames: "provided_field_names",
   derivedFields: "derived_fields",
   defaultValues: "default_values",
+  preserveDistance: "preserve_distance",
   fieldColors: "field_colors",
   playedSegmentColor: "played_segment_color",
   entries: "entries",
@@ -75,6 +76,7 @@ export interface SnatcitConfig {
   readonly providedFieldNames: string[];
   readonly derivedFields: DerivedField[];
   readonly defaultValues: { [fieldName: string]: undefined | number };
+  readonly preserveDistance: { [fieldName: string]: readonly string[] };
   readonly fieldColors: { [fieldName: string]: undefined | RgbTuple };
   readonly playedSegmentColor: RgbaTuple;
   readonly entries: readonly Entry[];
@@ -154,6 +156,8 @@ export function parseConfig(
       })
     );
     const defaultValues = json[SNATCIT_CONFIG_JSON_KEYS.defaultValues];
+    const preserveDistance =
+      json[SNATCIT_CONFIG_JSON_KEYS.preserveDistance] ?? {};
     const fieldColors = json[SNATCIT_CONFIG_JSON_KEYS.fieldColors];
     const playedSegmentColor =
       json[SNATCIT_CONFIG_JSON_KEYS.playedSegmentColor];
@@ -208,6 +212,14 @@ export function parseConfig(
       providedFieldNames.every(
         (fieldName) => typeof defaultValues[fieldName] === "number"
       ) &&
+      Object.keys(preserveDistance).every((changedKey) =>
+        providedFieldNames.includes(changedKey)
+      ) &&
+      Object.values(preserveDistance).every((updatedFieldNames: any) =>
+        updatedFieldNames.every((updatedFieldName: unknown) =>
+          providedFieldNames.includes(updatedFieldName)
+        )
+      ) &&
       (allFieldNames.every((fieldName: string) =>
         isValidRgbTuple(fieldColors[fieldName])
       ) as boolean) &&
@@ -230,6 +242,7 @@ export function parseConfig(
           providedFieldNames,
           derivedFields,
           defaultValues,
+          preserveDistance,
           fieldColors,
           playedSegmentColor,
           entries,
@@ -301,6 +314,7 @@ export function stringifyConfig(config: SnatcitConfig): string {
         })
       ),
       [SNATCIT_CONFIG_JSON_KEYS.defaultValues]: config.defaultValues,
+      [SNATCIT_CONFIG_JSON_KEYS.preserveDistance]: config.preserveDistance,
       [SNATCIT_CONFIG_JSON_KEYS.fieldColors]: config.fieldColors,
       [SNATCIT_CONFIG_JSON_KEYS.playedSegmentColor]: config.playedSegmentColor,
       [SNATCIT_CONFIG_JSON_KEYS.entries]: config.entries.map((entry) => ({
@@ -382,13 +396,47 @@ export function updateConfig(
         .map((fieldEntry) => [fieldEntry.fieldName, fieldEntry.value])
     ),
   };
+
+  const previousPrincipalValue =
+    previousEffectiveEntry.providedFieldValues[providedFieldName];
+  if (previousPrincipalValue === undefined) {
+    throw new Error(
+      "Impossible: previousPrincipalValue[" +
+        providedFieldName +
+        "] is undefined"
+    );
+  }
+  const principalValueChange = value - previousPrincipalValue;
+  const namesOfFieldsCollaterallyUpdatedByPrincipalUpdate =
+    config.preserveDistance[providedFieldName] ?? [];
+  const triggeredUpdates: [string, number][] =
+    namesOfFieldsCollaterallyUpdatedByPrincipalUpdate.map(
+      (collateralFieldName) => {
+        const previousCollateralValue =
+          previousEffectiveEntry.providedFieldValues[collateralFieldName];
+        if (previousCollateralValue === undefined) {
+          throw new Error(
+            "Impossible: previousCollateralValue[" +
+              collateralFieldName +
+              "] is undefined"
+          );
+        }
+        return [
+          collateralFieldName,
+          previousCollateralValue + principalValueChange,
+        ];
+      }
+    );
+
   const updatedEntry: Entry = {
     ...previousEffectiveEntry,
     providedFieldValues: {
       ...previousEffectiveEntry.providedFieldValues,
       [providedFieldName]: value,
+      ...Object.fromEntries(triggeredUpdates),
     },
   };
+
   return {
     ...config,
     entries:

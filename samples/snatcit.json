@@ -28,6 +28,12 @@
     "fixed_region": 0,
     "cutoff": 0
   },
+  "preserve_distance": {
+    "offset": ["preutterance", "fixed_region", "cutoff"],
+    "preutterance": ["fixed_region", "cutoff"],
+    "fixed_region": [],
+    "cutoff": []
+  },
   "field_colors": {
     "offset": [0, 0, 255],
     "overlap": [0, 255, 0],
