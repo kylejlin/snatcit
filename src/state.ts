@@ -1,4 +1,4 @@
-import { SnatcitConfig } from "./config";
+import { Entry, SnatcitConfig } from "./config";
 
 /**
  * This isn't meant to be an exhaustive list of all audio MIME types.
@@ -100,4 +100,5 @@ export interface AppState {
   readonly configRedoStack: readonly SnatcitConfig[];
   readonly isPlayOnClickForced: boolean;
   readonly isDistancePreservationOverridden: boolean;
+  readonly clipboard: undefined | Entry["providedFieldValues"];
 }

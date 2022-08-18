@@ -450,3 +450,20 @@ export function updateConfig(
           ),
   };
 }
+
+export function batchUpdateConfig(
+  config: SnatcitConfig,
+  replacementEntry: Entry
+): SnatcitConfig {
+  const doesEntryExist = config.entries.some(
+    (entry) => entry.name === replacementEntry.name
+  );
+  return {
+    ...config,
+    entries: doesEntryExist
+      ? config.entries.map((entry) =>
+          entry.name === replacementEntry.name ? replacementEntry : entry
+        )
+      : config.entries.concat([replacementEntry]),
+  };
+}

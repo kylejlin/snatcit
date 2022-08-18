@@ -77,10 +77,13 @@ Snatcit aims to solve this. With Snatcit, you just need to upload all the files 
 
 ## Useful Key Commands
 
-- Press `Cmd/Ctrl + z`: Undo
-  - Alternatively, `Cmd/Ctrl + u` will do the same thing (i.e., undo).
-- Press `Cmd/Ctrl + Shift + Z`: Redo
-  - Alternatively, `Cmd/Ctrl + y` will do the same thing (i.e., redo).
+- Press `z`: Undo
+  - Alternatively, `u` will do the same thing (i.e., undo).
+- Press `Shift + Z`: Redo
+  - Alternatively, `y` will do the same thing (i.e., redo).
+- Press `r`: Reset the field values (of the current snapau) to the defaults.
+- Press `c`: Copy the field values of the current snapau to the clipboard.
+- Press `v`: Paste the clipboard's values into the current snapau.
 - Click on spectrogram while holding down `f`: Force play-on-click. Normally, if you click on the spectrogram while a field is selected, Snatcit will set the selected field's value to the mouse position. However, if `f` is held while you click, then Snatcit will play the audio segment underneath the mouse (just like if there was no field selected).
 - Click on spectrogram while holding down `d`: Override distance preservation. This will make Snatcit ignore the `preserve_distance` field of `snatcit.json`, and set the selected field's value as if `preserve_distance` was omitted.
 

@@ -2,6 +2,8 @@ import React from "react";
 import { AppProps, AppState } from "./state";
 import { Header } from "./Header";
 import {
+  batchUpdateConfig,
+  Entry,
   getAllFieldValuesForEntry,
   getConfigFileNameFromSuffix,
   LabeledFieldValue,
@@ -67,6 +69,7 @@ export class App extends React.Component<AppProps, AppState> {
       configRedoStack: [],
       isPlayOnClickForced: false,
       isDistancePreservationOverridden: false,
+      clipboard: undefined,
     };
 
     this.spectrogramRef = React.createRef();
@@ -509,7 +512,7 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   windowOnKeyDown(event: KeyboardEvent): void {
-    if (isUndoEvent(event) || isRedoEvent(event)) {
+    if (isUndoKey(event) || isRedoKey(event)) {
       event.preventDefault();
       return;
     }
@@ -524,11 +527,11 @@ export class App extends React.Component<AppProps, AppState> {
   }
 
   windowOnKeyUp(event: KeyboardEvent): void {
-    if (isUndoEvent(event)) {
+    if (isUndoKey(event)) {
       this.undoConfigEditIfPossible();
       return;
     }
-    if (isRedoEvent(event)) {
+    if (isRedoKey(event)) {
       this.redoConfigEditIfPossible();
       return;
     }
@@ -538,6 +541,18 @@ export class App extends React.Component<AppProps, AppState> {
     }
     if (isOverrideDistancePreservationKey(event)) {
       this.setState({ isDistancePreservationOverridden: false });
+      return;
+    }
+    if (isResetToDefaultKey(event)) {
+      this.resetFieldValuesToDefault();
+      return;
+    }
+    if (isCopyKey(event)) {
+      this.copyFieldValues();
+      return;
+    }
+    if (isPasteKey(event)) {
+      this.pasteFieldValues();
       return;
     }
   }
@@ -571,6 +586,99 @@ export class App extends React.Component<AppProps, AppState> {
       } else {
         return prevState;
       }
+    });
+  }
+
+  resetFieldValuesToDefault(): void {
+    const { selectedEntryIndex } = this.state;
+    this.setState((prevState) => {
+      if (prevState.selectedEntryIndex !== selectedEntryIndex) {
+        return prevState;
+      }
+
+      const nameOfSnapauToReset =
+        this.props.snapauFileInfo[selectedEntryIndex].snapauName;
+      const prevConfig =
+        prevState.configHistory[prevState.configHistory.length - 1];
+      return {
+        ...prevState,
+        configHistory: prevState.configHistory.concat([
+          {
+            ...prevConfig,
+            entries: prevConfig.entries.filter(
+              (snapauEntry) => snapauEntry.name !== nameOfSnapauToReset
+            ),
+          },
+        ]),
+        configRedoStack: [],
+      };
+    });
+  }
+
+  copyFieldValues(): void {
+    const { selectedEntryIndex } = this.state;
+    this.setState((prevState) => {
+      if (prevState.selectedEntryIndex !== selectedEntryIndex) {
+        return prevState;
+      }
+
+      const prevConfig =
+        prevState.configHistory[prevState.configHistory.length - 1];
+      const snapauName =
+        this.props.snapauFileInfo[selectedEntryIndex].snapauName;
+      const { computedValues } = getAllFieldValuesForEntry(
+        prevConfig,
+        snapauName
+      );
+      const clipboard: Entry["providedFieldValues"] = Object.fromEntries(
+        prevConfig.providedFieldNames.map(
+          (providedFieldName): [string, number] => {
+            const fieldEntry = computedValues.find(
+              (fe) => fe.fieldName === providedFieldName
+            );
+            if (fieldEntry === undefined) {
+              throw new Error(
+                "Cannot compute the value for " +
+                  providedFieldName +
+                  ", which is a provided value."
+              );
+            }
+            return [providedFieldName, fieldEntry.value];
+          }
+        )
+      );
+      return {
+        ...prevState,
+        clipboard,
+      };
+    });
+  }
+
+  pasteFieldValues(): void {
+    const { selectedEntryIndex } = this.state;
+    this.setState((prevState) => {
+      if (prevState.selectedEntryIndex !== selectedEntryIndex) {
+        return prevState;
+      }
+      const { clipboard } = prevState;
+      if (clipboard === undefined) {
+        return prevState;
+      }
+
+      const prevConfig =
+        prevState.configHistory[prevState.configHistory.length - 1];
+      const snapauName =
+        this.props.snapauFileInfo[selectedEntryIndex].snapauName;
+      return {
+        ...prevState,
+        configHistory: prevState.configHistory.concat([
+          batchUpdateConfig(prevConfig, {
+            name: snapauName,
+            providedFieldValues: clipboard,
+          }),
+        ]),
+        configRedoStack: [],
+      };
     });
   }
 
@@ -748,16 +856,12 @@ function getNextAvailableDownloadFilename(
   }
 }
 
-function isUndoEvent(event: KeyboardEvent): boolean {
-  return (
-    (event.key === "z" || event.key === "u") && (event.ctrlKey || event.metaKey)
-  );
+function isUndoKey(event: KeyboardEvent): boolean {
+  return event.key === "z" || event.key === "u";
 }
 
-function isRedoEvent(event: KeyboardEvent): boolean {
-  return (
-    (event.key === "Z" || event.key === "y") && (event.ctrlKey || event.metaKey)
-  );
+function isRedoKey(event: KeyboardEvent): boolean {
+  return event.key === "Z" || event.key === "y";
 }
 
 function isForcePlayOnClickKey(event: KeyboardEvent): boolean {
@@ -766,4 +870,16 @@ function isForcePlayOnClickKey(event: KeyboardEvent): boolean {
 
 function isOverrideDistancePreservationKey(event: KeyboardEvent): boolean {
   return event.key === "d";
+}
+
+function isResetToDefaultKey(event: KeyboardEvent): boolean {
+  return event.key === "r";
+}
+
+function isCopyKey(event: KeyboardEvent): boolean {
+  return event.key === "c";
+}
+
+function isPasteKey(event: KeyboardEvent): boolean {
+  return event.key === "v";
 }
