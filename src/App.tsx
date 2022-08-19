@@ -555,6 +555,10 @@ export class App extends React.Component<AppProps, AppState> {
       this.pasteFieldValues();
       return;
     }
+    if (isJumpKey(event)) {
+      this.openJumpDialog();
+      return;
+    }
   }
 
   undoConfigEditIfPossible(): void {
@@ -680,6 +684,23 @@ export class App extends React.Component<AppProps, AppState> {
         configRedoStack: [],
       };
     });
+  }
+
+  openJumpDialog(): void {
+    const targetName = window.prompt(
+      "Please enter the name of the snapau to jump to: "
+    );
+    if (targetName === null) {
+      return;
+    }
+    const targetIndex = this.props.snapauFileInfo.findIndex(
+      (fi) => fi.snapauName === targetName
+    );
+    if (targetIndex === -1) {
+      window.alert('No snapau named "' + targetName + '" found.');
+      return;
+    }
+    this.setState({ selectedEntryIndex: targetIndex });
   }
 
   getAudioData(index: number, canvasWidth: number): Promise<AudioData> {
@@ -882,4 +903,8 @@ function isCopyKey(event: KeyboardEvent): boolean {
 
 function isPasteKey(event: KeyboardEvent): boolean {
   return event.key === "v";
+}
+
+function isJumpKey(event: KeyboardEvent): boolean {
+  return event.key === "j";
 }
