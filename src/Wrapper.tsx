@@ -472,9 +472,9 @@ function getConfigAndAudioFileFromFileInfoArray(
           file,
           snapauName: file.name,
         }));
-  const snapauFileInfo = snapauFileInfoFromRecognizedFiles.concat(
-    snapauFileInfoFromUnrecognizedFiles
-  );
+  const snapauFileInfo = snapauFileInfoFromRecognizedFiles
+    .concat(snapauFileInfoFromUnrecognizedFiles)
+    .sort((a, b) => a.snapauName.localeCompare(b.snapauName));
 
   const snapauNameDuplicateStatus = getArbitraryDuplicate<SnapauFileInfo>(
     snapauFileInfo,
